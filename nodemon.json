@@ -1,0 +1,11 @@
+{
+  "watch": ["server.js", "src", "routes", "controllers"],
+  "ignore": [
+    "node_modules/*",
+    "dist/*",
+    "build/*",
+    "vite.config.*",
+    "vite.config.js.timestamp-*.mjs",
+    "**/*.timestamp-*.mjs"
+  ]
+}
