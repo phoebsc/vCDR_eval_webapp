@@ -11,7 +11,6 @@ export default function App() {
   const [events, setEvents] = useState([]);
   const [dataChannel, setDataChannel] = useState(null);
   const peerConnection = useRef(null);
-  const audioElement = useRef(null);
 
   // Benchmarking state
   const [isBenchmarkMode, setIsBenchmarkMode] = useState(false);
@@ -40,21 +39,35 @@ export default function App() {
     // Create a peer connection
     const pc = new RTCPeerConnection();
 
-    // Set up to play remote audio from the model
-    audioElement.current = document.createElement("audio");
-    audioElement.current.autoplay = true;
-    pc.ontrack = (e) => (audioElement.current.srcObject = e.streams[0]);
+    // ✅ Receive model audio, but DO NOT send mic audio
+    pc.addTransceiver("audio", { direction: "recvonly" });
 
-    // Add local audio track for microphone input in the browser (only if not in benchmark mode)
-    if (!isBenchmarkMode) {
-      const ms = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-      });
-      pc.addTrack(ms.getTracks()[0]);
-      console.log('[App] Added microphone track (normal mode)');
-    } else {
-      console.log('[App] Skipped microphone setup (benchmark mode)');
+    // ✅ Create / reuse an <audio> element to play the remote stream
+    // Prefer an existing ref if you have one; otherwise create one.
+    if (!window.__oaiRemoteAudioEl) {
+      const audioEl = document.createElement("audio");
+      audioEl.autoplay = true;
+      audioEl.playsInline = true; // iOS/Safari friendliness
+      audioEl.muted = false;
+      document.body.appendChild(audioEl);
+      window.__oaiRemoteAudioEl = audioEl;
     }
+    const audioEl = window.__oaiRemoteAudioEl;
+
+    // ✅ Attach remote tracks to the audio element so you can hear them
+    pc.ontrack = (event) => {
+      if (event.track.kind === "audio") {
+        audioEl.srcObject = event.streams[0];
+        // Autoplay policies: try to start playback (works best if startSession is called from a click)
+        audioEl.play().catch((err) => {
+          console.warn("[App] Remote audio autoplay blocked; user gesture required.", err);
+        });
+      }
+    };
+
+    // Helpful debugging
+    pc.onconnectionstatechange = () => console.log("[App] pc.connectionState:", pc.connectionState);
+    pc.oniceconnectionstatechange = () => console.log("[App] pc.iceConnectionState:", pc.iceConnectionState);
 
     // Set up data channel for sending and receiving events
     const dc = pc.createDataChannel("oai-events");
@@ -65,8 +78,7 @@ export default function App() {
     await pc.setLocalDescription(offer);
 
     const baseUrl = "https://api.openai.com/v1/realtime/calls";
-    const model = "gpt-realtime";
-    const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
+    const sdpResponse = await fetch(baseUrl, {
       method: "POST",
       body: offer.sdp,
       headers: {
@@ -75,12 +87,19 @@ export default function App() {
       },
     });
 
-    const sdp = await sdpResponse.text();
-    const answer = { type: "answer", sdp };
-    await pc.setRemoteDescription(answer);
-
-    peerConnection.current = pc;
+  // ✅ Guard: ensure we actually got SDP back (not JSON/HTML error)
+  const sdpText = await sdpResponse.text();
+  if (!sdpResponse.ok || !sdpText.trim().startsWith("v=")) {
+    console.error("[App] Realtime /calls failed:", sdpResponse.status, sdpText);
+    throw new Error(`Realtime /calls failed: ${sdpResponse.status}`);
   }
+
+  const answer = { type: "answer", sdp: sdpText };
+  await pc.setRemoteDescription(answer);
+
+  peerConnection.current = pc;
+}
+
 
   // Stop current session, clean up peer connection and data channel
   function stopSession() {

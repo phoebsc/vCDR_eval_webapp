@@ -12,60 +12,18 @@ export class SimulatedUser {
 - Software engineer with 3 years experience
 - Worked at tech startups on web applications
 - Interested in AI/ML and full-stack development
-- Enthusiastic but sometimes gets carried away with tangents
 
-Respond naturally to interview questions. Occasionally (20% of the time) provide off-topic or unexpected responses to test the interviewer's handling, such as:
-- Going into excessive technical detail
-- Asking questions back to the interviewer
-- Mentioning unrelated personal interests
-- Being overly brief or evasive
+Keep responses conversational and realistic but very short. Please respond only with what you say and not the entire conversation history.`;
 
-Keep responses conversational and realistic. Vary your response length and style.`;
-
-    this.responses = [
-      // Responses for "Tell me about yourself"
-      [
-        "I'm a software engineer with about 3 years of experience, mostly working at startups building web applications. I got into programming in college and really fell in love with the problem-solving aspect of it.",
-        "Well, I've been coding for 3 years now, started right after college. I work mainly on full-stack development, you know, React, Node.js, that kind of stuff. Oh, and I have this hobby where I collect vintage keyboards - did you know some mechanical keyboards from the 80s are worth thousands now?",
-        "Software engineer, 3 years experience. Next question?"
-      ],
-
-      // Responses for "What interests you most about this field?"
-      [
-        "I'm really excited about AI and machine learning integration in web applications. The way we can now build more intelligent, responsive user experiences is incredible.",
-        "Honestly, what gets me most excited is how fast everything changes. Like, just this year we've seen so many developments in AI... Actually, what's your company's stance on using AI tools in development?",
-        "The constant learning. There's always something new to figure out."
-      ],
-
-      // Responses for "Describe a challenging project"
-      [
-        "Last year I worked on a real-time collaboration platform, kind of like Google Docs but for code. The biggest challenge was handling concurrent edits without conflicts. We ended up implementing operational transforms, which was complex but really satisfying when it worked.",
-        "Oh boy, where do I start? We had this project where the database was completely denormalized, and I spent weeks trying to optimize these queries that were taking like 30 seconds each. I rewrote the entire schema, added proper indexing... Actually, have you ever worked with PostgreSQL's EXPLAIN ANALYZE? It's fascinating how you can see exactly where the bottlenecks are...",
-        "Built a chat app. It was hard. Used WebSockets."
-      ],
-
-      // Responses for "Where do you see yourself in 5 years?"
-      [
-        "I'd love to be leading a small team, working on products that really make a difference. Maybe something in the intersection of AI and accessibility - I think there's huge potential there to help people.",
-        "Definitely want to grow into more senior roles, maybe tech lead or engineering manager. Though honestly, I'm also considering starting my own company someday. I have this idea for an app that helps people find lost pets using computer vision - do you think that's a viable market?",
-        "Senior engineer, I guess. Maybe management."
-      ],
-
-      // Responses for "Do you have any questions for me?"
-      [
-        "Yes, what does a typical day look like for someone in this role? And what are the biggest technical challenges the team is currently facing?",
-        "Actually, I'm curious - what's the company culture like? Do you do pair programming? Also, random question, but what's the coffee situation like here? I'm kind of a coffee snob.",
-        "Not really, no."
-      ]
-    ];
-
-    this.currentQuestionIndex = 0;
+    this.conversationHistory = [];
     this.isActive = false;
+    this.lastInterviewerMessage = '';
   }
 
   start() {
     this.isActive = true;
-    this.currentQuestionIndex = 0;
+    this.conversationHistory = [];
+    this.lastInterviewerMessage = '';
   }
 
   stop() {
@@ -73,33 +31,154 @@ Keep responses conversational and realistic. Vary your response length and style
   }
 
   reset() {
-    this.currentQuestionIndex = 0;
+    this.conversationHistory = [];
+    this.lastInterviewerMessage = '';
     this.isActive = false;
   }
 
   /**
    * Generate a response to the current interview question
-   * @returns {string} The simulated user's response
+   * @param {string} interviewerMessage - The latest message from the interviewer
+   * @returns {Promise<string>} The simulated user's response
    */
-  generateResponse() {
+  async generateResponse(interviewerMessage = '') {
     console.log('[SimulatedUser] generateResponse called');
     console.log('[SimulatedUser] isActive:', this.isActive);
-    console.log('[SimulatedUser] currentQuestionIndex:', this.currentQuestionIndex);
-    console.log('[SimulatedUser] responses.length:', this.responses.length);
 
-    if (!this.isActive || this.currentQuestionIndex >= this.responses.length) {
-      console.log('[SimulatedUser] Cannot generate response - inactive or no more questions');
+    if (!this.isActive) {
+      console.log('[SimulatedUser] Cannot generate response - inactive');
       return null;
     }
 
-    const responseOptions = this.responses[this.currentQuestionIndex];
-    const randomIndex = Math.floor(Math.random() * responseOptions.length);
-    const response = responseOptions[randomIndex];
+    // Update conversation history
+    if (interviewerMessage) {
+      this.lastInterviewerMessage = interviewerMessage;
+      this.conversationHistory.push({
+        role: 'interviewer',
+        message: interviewerMessage
+      });
+    }
 
-    console.log('[SimulatedUser] Selected response option', randomIndex, 'of', responseOptions.length, ':', response);
+    try {
+      // Generate response using AI
+      const response = await this.generateAIResponse();
 
-    this.currentQuestionIndex++;
-    return response;
+      if (response) {
+        // Add our response to conversation history
+        this.conversationHistory.push({
+          role: 'candidate',
+          message: response
+        });
+      }
+
+      return response;
+    } catch (error) {
+      console.error('[SimulatedUser] Error generating AI response:', error);
+      // Fallback to a simple response
+      return "Could you please repeat the question?";
+    }
+  }
+
+  /**
+   * Generate AI-based response using OpenAI API
+   * @returns {Promise<string>} Generated response
+   */
+  async generateAIResponse() {
+    // Build conversation context
+    const messages = [
+      { role: 'system', content: this.systemPrompt }
+    ];
+
+    // Add conversation history
+    this.conversationHistory.forEach(entry => {
+      messages.push({
+        role: entry.role === 'interviewer' ? 'user' : 'assistant',
+        content: entry.message
+      });
+    });
+
+    // // Add current interviewer message if we haven't processed it yet
+    // if (this.lastInterviewerMessage && !messages.some(m => m.content === this.lastInterviewerMessage)) {
+    //   messages.push({
+    //     role: 'user',
+    //     content: this.lastInterviewerMessage
+    //   });
+    // }
+
+    console.log('[SimulatedUser] Sending request to OpenAI with messages:', messages);
+
+    try {
+      // Make API call to generate response
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${await this.getOpenAIKey()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4',
+          messages: messages,
+          max_tokens: 150,
+          temperature: 0,
+          presence_penalty: 0.1,
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.choices[0].message.content.trim();
+    } catch (error) {
+      console.error('[SimulatedUser] OpenAI API call failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get OpenAI API key from server
+   * @returns {Promise<string>} API key
+   */
+  async getOpenAIKey() {
+    // For now, we'll need to get the API key from the server
+    // In a real implementation, you'd want to proxy this through your server
+    // to keep the API key secure
+    try {
+      const response = await fetch('/api/openai-key');
+      const data = await response.json();
+      return data.key;
+    } catch (error) {
+      // Fallback - this would need to be implemented on the server side
+      console.warn('[SimulatedUser] Could not get API key from server, using environment');
+      throw new Error('OpenAI API key not available');
+    }
+  }
+
+  /**
+   * Extract the latest interviewer message from events
+   * @param {Array} events - Array of conversation events
+   * @returns {string} Latest interviewer message
+   */
+  extractLatestInterviewerMessage(events) {
+    console.log('[SimulatedUser] Extracting latest interviewer message from', events.length, 'events');
+
+    // Look for the most recent interviewer message
+    const recentEvents = events.slice(0, 10); // Check last 10 events
+
+    for (const event of recentEvents) {
+      let content = '';
+
+      if (event.type === 'response.output_audio_transcript.done' && event.transcript) {
+        content = event.transcript;
+      } 
+
+      if (content.trim()) {
+        return content.trim();
+      }
+    }
+
+    return '';
   }
 
   /**
@@ -117,77 +196,13 @@ Keep responses conversational and realistic. Vary your response length and style
     }
 
     // Look for the latest AI response that contains a question
-    const latestEvents = events.slice(0, 1); // Check last 1 events
-    console.log('[SimulatedUser] Checking latest events:', latestEvents.map(e => e.type));
-
-    for (const event of latestEvents) {
-      console.log('[SimulatedUser] Processing event:', event.type, event);
-
-      if (event.type === 'response.audio_transcript.done' ||
-          event.type === 'response.text.done' ||
-          event.type === 'response.audio_transcript.delta' ||
-          event.type === 'response.text.delta' ||
-          event.type === 'response.output_item.done' ||
-          (event.type === 'response.done' && event.response?.output)) {
-
-        // Extract text content from the event
-        let content = '';
-        if (event.transcript) {
-          content = event.transcript;
-          console.log('[SimulatedUser] Found transcript content:', content);
-        } else if (event.text) {
-          content = event.text;
-          console.log('[SimulatedUser] Found text content:', content);
-        } else if (event.delta) {
-          content = event.delta;
-          console.log('[SimulatedUser] Found delta content:', content);
-        } else if (event.item && event.item.content) {
-          // Handle output item events
-          for (const contentPart of event.item.content) {
-            if (contentPart.type === 'text') {
-              content += contentPart.text || '';
-            }
-          }
-          console.log('[SimulatedUser] Found item content:', content);
-        } else if (event.response?.output) {
-          // Handle structured response output
-          const outputs = event.response.output;
-          for (const output of outputs) {
-            if (output.type === 'message' && output.content) {
-              for (const contentPart of output.content) {
-                if (contentPart.type === 'text') {
-                  content += contentPart.text;
-                }
-              }
-            }
-          }
-          console.log('[SimulatedUser] Found structured content:', content);
-        }
-
-        // if (content.trim()) {
-        //   console.log('[SimulatedUser] Analyzing content for response triggers:', content);
-
-        //   // Check if it's a question or if it contains interview-related keywords
-        //   const hasQuestion = content.includes('?');
-        //   const hasTellMe = content.toLowerCase().includes('tell me');
-        //   const hasDescribe = content.toLowerCase().includes('describe');
-        //   const hasWhat = content.toLowerCase().includes('what');
-        //   const hasWhere = content.toLowerCase().includes('where');
-        //   const hasHow = content.toLowerCase().includes('how');
-
-        //   console.log('[SimulatedUser] Content analysis:', {
-        //     hasQuestion, hasTellMe, hasDescribe, hasWhat, hasWhere, hasHow
-        //   });
-
-        //   if (hasQuestion || hasTellMe || hasDescribe || hasWhat || hasWhere || hasHow) {
-        //     console.log('[SimulatedUser] Should respond: TRUE');
-        //     return true;
-        //   }
-        // }
-      }
+    const latestEvents = events.slice(0, 5); // Check last 1 events
+    console.log('[SimulatedUser] Checking latest event:', latestEvents.map(e => e.type));
+    const latestEvent = events[events.length-1]
+    // todo: in the future add content restraints for response by checking the content of response.audio_output_transcript.done
+    if (latestEvent.type === 'response.output_audio.done') {
+      return true
     }
-
-    console.log('[SimulatedUser] always responds');
     return true;
   }
 

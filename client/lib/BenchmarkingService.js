@@ -12,49 +12,13 @@ export class BenchmarkingService {
     this.simulatedUser = new SimulatedUser();
     this.isRunning = false;
     this.currentRun = null;
-    this.responseDelay = 3000; // 3 second delay between responses
+    this.responseDelay = 1000; // delay from receiving audio_buffer_stopped to sending the text message
     this.maxResponseWaitTime = 10000; // 10 seconds max wait for AI response
 
     // Callbacks for UI updates
     this.onTranscriptUpdate = null;
     this.onLogUpdate = null;
     this.onRunComplete = null;
-
-    // Setup console capture
-    this.setupConsoleCapture();
-  }
-
-  /**
-   * Setup console capture to redirect logs to the UI
-   */
-  setupConsoleCapture() {
-    // Store original console.log
-    this.originalConsoleLog = console.log;
-
-    // Override console.log to capture logs for the UI
-    console.log = (...args) => {
-      // Still log to browser console
-      this.originalConsoleLog(...args);
-
-      // If we have an active run and this is a BenchmarkingService or SimulatedUser log
-      if (this.currentRun && args.length > 0) {
-        const message = args.join(' ');
-        if (message.includes('[BenchmarkingService]') || message.includes('[SimulatedUser]')) {
-          // Extract the clean message without the prefix
-          const cleanMessage = message.replace(/^\[.*?\]\s*/, '');
-          this.logEvent('debug', cleanMessage, { originalMessage: message });
-        }
-      }
-    };
-  }
-
-  /**
-   * Restore original console.log
-   */
-  restoreConsole() {
-    if (this.originalConsoleLog) {
-      console.log = this.originalConsoleLog;
-    }
   }
 
   /**
@@ -95,27 +59,11 @@ export class BenchmarkingService {
     // Begin monitoring the conversation
     console.log('[BenchmarkingService] Starting to monitor conversation with', events.length, 'initial events');
 
-    // Add test transcript entries to verify UI is working
-    this.addToTranscript('user', 'TEST: User message added manually');
-    this.addToTranscript('interviewer', 'TEST: Interviewer message added manually');
-
-    // Update UI immediately to test
-    if (this.onTranscriptUpdate) {
-      console.log('[BenchmarkingService] TEST: Calling onTranscriptUpdate with test entries');
-      this.onTranscriptUpdate([...this.currentRun.transcript]);
-    }
-
     // Send initial greeting to start the conversation
     setTimeout(() => {
       if (this.isRunning) {
         console.log('[BenchmarkingService] Sending initial greeting to start conversation');
         this.sendTextMessage("Hello, I'm ready for the interview.");
-        this.addToTranscript('user', "Hello, I'm ready for the interview.");
-
-        // Update UI after adding greeting
-        if (this.onTranscriptUpdate) {
-          this.onTranscriptUpdate([...this.currentRun.transcript]);
-        }
       }
     }, 1000);
 
@@ -132,9 +80,6 @@ export class BenchmarkingService {
 
     this.isRunning = false;
     this.simulatedUser.stop();
-
-    // Restore console logging
-    this.restoreConsole();
 
     this.currentRun.endTime = new Date();
     this.currentRun.status = 'completed';
@@ -166,6 +111,9 @@ export class BenchmarkingService {
       return;
     }
 
+    // Store current events for use by generateSimulatedResponse
+    this.currentEvents = events;
+
     // Update event log with new events
     this.updateEventLog(events);
 
@@ -181,25 +129,24 @@ export class BenchmarkingService {
     console.log('[BenchmarkingService] Checking if simulated user should respond...');
     if (this.simulatedUser.shouldRespond(events)) {
       console.log('[BenchmarkingService] Simulated user should respond');
-
       // Only respond if we haven't already responded recently
       const lastLog = this.currentRun.eventLog[this.currentRun.eventLog.length - 1];
       const timeSinceLastResponse = lastLog && lastLog.source === 'simulated_user'
         ? new Date() - new Date(lastLog.timestamp)
         : this.responseDelay + 1000;
-
+      console.log('[BenchmarkingService] lastLog:', JSON.stringify(lastLog))
       console.log('[BenchmarkingService] Time since last response:', timeSinceLastResponse, 'ms');
       console.log('[BenchmarkingService] Response delay:', this.responseDelay, 'ms');
 
-      if (timeSinceLastResponse > this.responseDelay) {
+      // New mechanism: only respond if the audio is finished (plus a delay)
+      // if (timeSinceLastResponse > this.responseDelay) {
+      if (lastLog.action=='output_audio_buffer.stopped') {
         console.log('[BenchmarkingService] Scheduling response in', this.responseDelay, 'ms');
         setTimeout(() => {
           if (this.isRunning) {
             this.generateSimulatedResponse();
           }
         }, this.responseDelay);
-      } else {
-        console.log('[BenchmarkingService] Too soon to respond, waiting...');
       }
     } else {
       console.log('[BenchmarkingService] Simulated user should NOT respond');
@@ -209,32 +156,36 @@ export class BenchmarkingService {
   /**
    * Generate and send a simulated user response
    */
-  generateSimulatedResponse() {
+  async generateSimulatedResponse() {
     console.log('[BenchmarkingService] Generating simulated response...');
-    const response = this.simulatedUser.generateResponse();
 
-    if (response) {
-      console.log('[BenchmarkingService] Generated response:', response);
+    // Extract the latest interviewer message from current events
+    const interviewerMessage = this.simulatedUser.extractLatestInterviewerMessage(this.currentEvents || []);
+    this.addToTranscript('interviewer', interviewerMessage);
+    this.updateTranscriptUI();
+    console.log('[BenchmarkingService] Extracted interviewer message:', interviewerMessage);
 
-      // Add to transcript
-      this.addToTranscript('user', response);
+    try {
+      const response = await this.simulatedUser.generateResponse(interviewerMessage);
 
-      // Log the simulated response
-      this.logEvent('simulated_user', 'Generated response', {
-        text: response,
-        questionIndex: this.simulatedUser.currentQuestionIndex - 1
-      });
+      if (response) {
+        // Log the simulated response
+        this.logEvent('simulated_user', 'Generated response');
+        this.addToTranscript('simulated_user', response);
+        this.updateTranscriptUI();
 
-      // Send the response
-      console.log('[BenchmarkingService] Sending text message:', response);
-      this.sendTextMessage(response);
-
-      // Update UI
-      if (this.onTranscriptUpdate) {
-        this.onTranscriptUpdate(this.currentRun.transcript);
+        // Send the response (transcript will be updated when we see the conversation.item.created event)
+        console.log('[BenchmarkingService] Simulated user sending text message:', response);
+        this.sendTextMessage(response);
+      } else {
+        console.log('[BenchmarkingService] Simulated user no response generated');
       }
-    } else {
-      console.log('[BenchmarkingService] No response generated');
+    } catch (error) {
+      console.error('[BenchmarkingService] Error generating simulated response:', error);
+      this.logEvent('simulated_user', 'Response generation failed', {
+        error: error.message,
+        interviewerMessage: interviewerMessage
+      });
     }
   }
 
@@ -286,121 +237,66 @@ export class BenchmarkingService {
    * @param {Array} events - Conversation events from the realtime API
    */
   updateEventLog(events) {
-    console.log('[BenchmarkingService] updateEventLog called with', events.length, 'events');
+    console.log('[BenchmarkingService] updateEventLog processing', events.length, 'events');
 
-    // Process only new events that we haven't seen before
+    // Process only new events to avoid duplicates
     const newEvents = events.filter(event => {
       return !this.currentRun.processedEventIds?.includes(event.event_id);
     });
 
-    // Track processed event IDs
     if (!this.currentRun.processedEventIds) {
       this.currentRun.processedEventIds = [];
     }
 
-    // Process new events and extract transcript information
+    console.log('[BenchmarkingService] Processing', newEvents.length, 'new events for transcript');
+
     newEvents.forEach(event => {
-      console.log('[BenchmarkingService] Processing NEW event for transcript:', event.type);
-      console.log('[BenchmarkingService] Full event object:', JSON.stringify(event, null, 2));
-
       // Mark as processed
-      this.currentRun.processedEventIds.push(event.event_id);
-
-      // Extract text content for transcript
-      let textContent = '';
-      let role = 'interviewer';
-
-      // Handle various event types that contain text - improved parsing
-      if (event.type === 'response.audio_transcript.done' && event.transcript) {
-        textContent = event.transcript;
-        console.log('[BenchmarkingService] Found audio transcript:', textContent);
-      }
-      else if (event.type === 'response.text.done' && event.text) {
-        textContent = event.text;
-        console.log('[BenchmarkingService] Found text response:', textContent);
-      }
-      else if (event.type === 'response.output_item.done' && event.item) {
-        // Handle output item events (common in realtime API)
-        if (event.item.type === 'message' && event.item.content) {
-          for (const content of event.item.content) {
-            if (content.type === 'text' && content.text) {
-              textContent += content.text;
-            }
-          }
-        }
-        console.log('[BenchmarkingService] Found output item text:', textContent);
-      }
-      else if (event.type === 'response.done' && event.response?.output) {
-        // Extract text from structured response
-        for (const output of event.response.output) {
-          if (output.type === 'message' && output.content) {
-            for (const content of output.content) {
-              if (content.type === 'text' && content.text) {
-                textContent += content.text;
-              }
-            }
-          }
-        }
-        console.log('[BenchmarkingService] Found structured response text:', textContent);
-      }
-      else if (event.type === 'conversation.item.created' && event.item) {
-        // Handle user messages (text input)
-        if (event.item.role === 'user' && event.item.content) {
-          for (const content of event.item.content) {
-            if (content.type === 'input_text' && content.text) {
-              textContent = content.text;
-              role = 'user';
-            }
-          }
-        }
-        console.log('[BenchmarkingService] Found user input text:', textContent);
-      }
-      // Additional event type - sometimes transcript comes in different formats
-      else if (event.type === 'session.update' && event.session) {
-        // Log session updates but don't extract transcript
-        console.log('[BenchmarkingService] Session update event');
-      }
-      else {
-        // Log other event types for debugging
-        console.log('[BenchmarkingService] Unhandled event type:', event.type, 'Available keys:', Object.keys(event));
+      if (event.event_id) {
+        this.currentRun.processedEventIds.push(event.event_id);
       }
 
-      // Add to transcript if we found text content
-      if (textContent && textContent.trim()) {
-        const cleanText = textContent.trim();
-        console.log('[BenchmarkingService] Processing text for transcript:', role, cleanText);
+      // ONLY handle transcript updates for these specific event types:
 
-        // Check if this is already in our transcript to avoid duplicates
-        const exists = this.currentRun.transcript.some(entry =>
-          entry.message === cleanText &&
-          entry.role === role &&
-          Math.abs(new Date(entry.timestamp) - new Date()) < 30000 // Within 30 seconds
-        );
+      // 1. Server/Interviewer audio responses
+      // if (event.type === 'response.output_audio_transcript.done' && event.transcript) {
+      //   console.log('[BenchmarkingService] Adding interviewer transcript:', event.transcript);
+      //   // this.addToTranscript('interviewer', event.transcript);
+      //   // this.updateTranscriptUI();
+      // }
 
-        if (!exists) {
-          this.addToTranscript(role, cleanText);
-          console.log('[BenchmarkingService] Added to transcript - total entries:', this.currentRun.transcript.length);
+      // // 2. User text input (from simulated user)
+      // else if (event.type === 'conversation.item.created' && event.item.content) {
+      //   let userText = '';
+      //   for (const content of event.item.content) {
+      //     if (content.type === 'input_text' && content.text) {
+      //       userText = content.text;
+      //       break;
+      //     }
+      //   }
+      //   if (userText) {
+      //     console.log('[BenchmarkingService] Adding user transcript:', userText);
+      //     this.addToTranscript('user', userText);
+      //     this.updateTranscriptUI();
+      //   }
+      // }
 
-          // Update UI immediately
-          if (this.onTranscriptUpdate) {
-            console.log('[BenchmarkingService] Calling onTranscriptUpdate with', this.currentRun.transcript.length, 'entries');
-            this.onTranscriptUpdate([...this.currentRun.transcript]); // Create a new array reference
-          } else {
-            console.warn('[BenchmarkingService] onTranscriptUpdate callback not set!');
-          }
-        } else {
-          console.log('[BenchmarkingService] Duplicate transcript entry, skipping');
-        }
-      }
-
-      // Log the raw event to the event log
+      // Log all events for debugging (but don't extract transcript from them)
       this.logEvent('realtime_api', event.type, {
         eventId: event.event_id,
-        hasText: !!textContent
+        hasTranscript: !!event.transcript
       });
     });
+  }
 
-    console.log('[BenchmarkingService] Current transcript has', this.currentRun.transcript.length, 'entries');
+  /**
+   * Update the transcript UI
+   */
+  updateTranscriptUI() {
+    if (this.onTranscriptUpdate) {
+      console.log('[BenchmarkingService] Updating transcript UI with', this.currentRun.transcript.length, 'entries');
+      this.onTranscriptUpdate([...this.currentRun.transcript]);
+    }
   }
 
   /**

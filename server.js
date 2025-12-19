@@ -91,6 +91,19 @@ app.get("/token", async (req, res) => {
   }
 });
 
+// API route for OpenAI API key (for simulated user)
+app.get("/api/openai-key", async (req, res) => {
+  try {
+    if (!apiKey) {
+      return res.status(500).json({ error: "OpenAI API key not configured" });
+    }
+    res.json({ key: apiKey });
+  } catch (error) {
+    console.error("API key retrieval error:", error);
+    res.status(500).json({ error: "Failed to retrieve API key" });
+  }
+});
+
 // Render the React client
 app.use("*", async (req, res, next) => {
   const url = req.originalUrl;
