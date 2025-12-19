@@ -39,11 +39,10 @@ export default function App() {
     // Create a peer connection
     const pc = new RTCPeerConnection();
 
-    // ✅ Receive model audio, but DO NOT send mic audio
+    // Receive model audio, but DO NOT send mic audio
     pc.addTransceiver("audio", { direction: "recvonly" });
 
-    // ✅ Create / reuse an <audio> element to play the remote stream
-    // Prefer an existing ref if you have one; otherwise create one.
+    // Create / reuse an <audio> element to play the remote stream
     if (!window.__oaiRemoteAudioEl) {
       const audioEl = document.createElement("audio");
       audioEl.autoplay = true;
@@ -54,7 +53,7 @@ export default function App() {
     }
     const audioEl = window.__oaiRemoteAudioEl;
 
-    // ✅ Attach remote tracks to the audio element so you can hear them
+    // Attach remote tracks to the audio element so you can hear them
     pc.ontrack = (event) => {
       if (event.track.kind === "audio") {
         audioEl.srcObject = event.streams[0];
