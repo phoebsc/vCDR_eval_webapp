@@ -6,14 +6,12 @@
  * off-topic responses to test the interviewer's handling capabilities.
  */
 
+import { getSystemPrompt, getPromptConfig } from '../../lib/promptLoader.js';
+
 export class SimulatedUser {
   constructor() {
-    this.systemPrompt = `You are a job candidate being interviewed. Your background:
-- Software engineer with 3 years experience
-- Worked at tech startups on web applications
-- Interested in AI/ML and full-stack development
-
-Keep responses conversational and realistic but very short. Please respond only with what you say and not the entire conversation history.`;
+    this.candidateConfig = getPromptConfig('candidate');
+    this.systemPrompt = this.candidateConfig.prompt;
 
     this.conversationHistory = [];
     this.isActive = false;
@@ -116,11 +114,11 @@ Keep responses conversational and realistic but very short. Please respond only 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4',
+          model: this.candidateConfig.model || 'gpt-4',
           messages: messages,
-          max_tokens: 150,
-          temperature: 0,
-          presence_penalty: 0.1,
+          max_tokens: this.candidateConfig.generation_settings?.max_tokens || 150,
+          temperature: this.candidateConfig.generation_settings?.temperature || 0,
+          presence_penalty: this.candidateConfig.generation_settings?.presence_penalty || 0.1,
         })
       });
 
