@@ -12,7 +12,7 @@ export class BenchmarkingService {
     this.simulatedUser = new SimulatedUser();
     this.isRunning = false;
     this.currentRun = null;
-    this.responseDelay = 1000; // delay from receiving audio_buffer_stopped to sending the text message
+    this.responseDelay = 200; // delay from receiving audio_buffer_stopped to sending the text message
     this.maxResponseWaitTime = 10000; // 10 seconds max wait for AI response
 
     // Callbacks for UI updates
@@ -131,12 +131,12 @@ export class BenchmarkingService {
       console.log('[BenchmarkingService] Simulated user should respond');
       // Only respond if we haven't already responded recently
       const lastLog = this.currentRun.eventLog[this.currentRun.eventLog.length - 1];
-      const timeSinceLastResponse = lastLog && lastLog.source === 'simulated_user'
-        ? new Date() - new Date(lastLog.timestamp)
-        : this.responseDelay + 1000;
+      // const timeSinceLastResponse = lastLog && lastLog.source === 'simulated_user'
+      //   ? new Date() - new Date(lastLog.timestamp)
+      //   : this.responseDelay + 1000;
       console.log('[BenchmarkingService] lastLog:', JSON.stringify(lastLog))
-      console.log('[BenchmarkingService] Time since last response:', timeSinceLastResponse, 'ms');
-      console.log('[BenchmarkingService] Response delay:', this.responseDelay, 'ms');
+      // console.log('[BenchmarkingService] Time since last response:', timeSinceLastResponse, 'ms');
+      // console.log('[BenchmarkingService] Response delay:', this.responseDelay, 'ms');
 
       // New mechanism: only respond if the audio is finished (plus a delay)
       // if (timeSinceLastResponse > this.responseDelay) {
@@ -306,6 +306,7 @@ export class BenchmarkingService {
     if (!this.currentRun) return;
 
     try {
+      console.log('Saving to path', JSON.stringify(localStorage))
       const savedRuns = JSON.parse(localStorage.getItem('benchmarkRuns') || '[]');
       savedRuns.push(this.currentRun);
 
