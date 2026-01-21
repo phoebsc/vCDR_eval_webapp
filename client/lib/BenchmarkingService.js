@@ -63,7 +63,7 @@ export class BenchmarkingService {
     setTimeout(() => {
       if (this.isRunning) {
         console.log('[BenchmarkingService] Sending initial greeting to start conversation');
-        this.sendTextMessage("Hello, I'm ready for the interview.");
+        this.sendTextMessage("Hello, I'm ready.");
       }
     }, 1000);
 
@@ -120,7 +120,7 @@ export class BenchmarkingService {
     // Check if conversation should end
     if (this.simulatedUser.isConversationEnded(events)) {
       console.log('[BenchmarkingService] Conversation ended detected');
-      this.logEvent('system', 'Termination cue detected', { cue: 'This is the end of this part' });
+      this.logEvent('system', 'Termination cue detected', { cue: 'That completes the interview' });
       setTimeout(() => this.endRun(), 1000);
       return;
     }

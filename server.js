@@ -22,7 +22,7 @@ const voiceBotSessionConfig = JSON.stringify({
   session: {
     type: "realtime",
     model: "gpt-realtime",
-    instructions: "interviewerConfig.prompt",
+    instructions: interviewerConfig.prompt,
     audio: {
       output: {
         voice: "marin",
@@ -89,6 +89,18 @@ app.get("/api/openai-key", async (req, res) => {
   } catch (error) {
     console.error("API key retrieval error:", error);
     res.status(500).json({ error: "Failed to retrieve API key" });
+  }
+});
+
+// API route for prompt configurations
+app.get("/api/prompts/:promptName", async (req, res) => {
+  try {
+    const { promptName } = req.params;
+    const config = getPromptConfig(promptName);
+    res.json(config);
+  } catch (error) {
+    console.error(`Error loading prompt "${req.params.promptName}":`, error);
+    res.status(404).json({ error: `Prompt not found: ${req.params.promptName}` });
   }
 });
 

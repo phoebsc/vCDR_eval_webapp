@@ -6,19 +6,58 @@
  * off-topic responses to test the interviewer's handling capabilities.
  */
 
-import { getSystemPrompt, getPromptConfig } from '../../lib/promptLoader.js';
-
 export class SimulatedUser {
   constructor() {
-    this.candidateConfig = getPromptConfig('candidate');
-    this.systemPrompt = this.candidateConfig.prompt;
+    this.candidateConfig = null;
+    this.systemPrompt = '';
+    this.initialized = false;
 
     this.conversationHistory = [];
     this.isActive = false;
     this.lastInterviewerMessage = '';
   }
 
-  start() {
+  /**
+   * Initialize the simulated user by loading the candidate config from server
+   */
+  async initialize() {
+    if (this.initialized) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/prompts/candidate');
+      if (!response.ok) {
+        throw new Error(`Failed to load candidate config: ${response.status}`);
+      }
+
+      this.candidateConfig = await response.json();
+      this.systemPrompt = this.candidateConfig.prompt;
+      this.initialized = true;
+    } catch (error) {
+      console.error('[SimulatedUser] Failed to initialize:', error);
+      // Fallback to a basic config if server is unavailable
+      this.candidateConfig = {
+        name: 'Candidate',
+        model: 'gpt-4',
+        role: 'candidate',
+        generation_settings: {
+          max_tokens: 150,
+          temperature: 0,
+          presence_penalty: 0.1
+        }
+      };
+      this.systemPrompt = `You are a job candidate being interviewed. Your background:
+- nurse with 3 years experience
+- Worked at pediatric hospitals
+
+Keep responses conversational and realistic but very short. Please respond only with what you say and not the entire conversation history.`;
+      this.initialized = true;
+    }
+  }
+
+  async start() {
+    await this.initialize();
     this.isActive = true;
     this.conversationHistory = [];
     this.lastInterviewerMessage = '';
@@ -42,6 +81,9 @@ export class SimulatedUser {
   async generateResponse(interviewerMessage = '') {
     console.log('[SimulatedUser] generateResponse called');
     console.log('[SimulatedUser] isActive:', this.isActive);
+
+    // Ensure we're initialized
+    await this.initialize();
 
     if (!this.isActive) {
       console.log('[SimulatedUser] Cannot generate response - inactive');
@@ -232,7 +274,7 @@ export class SimulatedUser {
         }
       }
 
-      if (content.toLowerCase().includes('this is the end of this part')) {
+      if (content.toLowerCase().includes("That completes the interview")) {
         return true;
       }
     }
