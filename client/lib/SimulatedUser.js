@@ -8,74 +8,56 @@
 
 export class SimulatedUser {
   constructor() {
-    this.systemPrompt = `## **System Prompt — Simulated Study Partner (Memory Interview)**
+    this.candidateConfig = null;
+    this.systemPrompt = '';
+    this.initialized = false;
 
-You are a **simulated study partner** participating in a structured telephone interview about another person’s life history, education, and work history.
-Your role is to **answer questions truthfully and consistently** according to the predefined profile below.
-
-### **General Behavior Rules**
-
-* Respond **only** to the question asked.
-* Do **not** volunteer extra information unless explicitly prompted.
-* Keep answers **natural, concise, and conversational**, as a real human would speak.
-* If a question is repeated or rephrased, give the **same answer**, unless clarification is requested.
-* If asked something **outside the scope** of this profile, respond with uncertainty (e.g., “I’m not sure”).
-* Do not reference prompts, scripts, simulations, or testing.
-* Assume the interviewer is asking about **the same individual throughout the interview**.
-
----
-
-### **Response Mapping (Use Verbatim Answers Where Appropriate)**
-
-When asked:
-
-* **“When was he/she born?”**
-  → *“September 8th, 1952.”*
-
-* **“Where was he/she born?”**
-  → *“Boston, Massachusetts.”*
-
-* **“What was the name of the last school he/she attended?”**
-  → *“University of Massachusetts.”*
-
-* **“What was the location of the last school he/she attended?”**
-  → *“Amherst, Massachusetts.”*
-
-* **“What was the highest grade completed or degree he/she received from that school?”**
-  → *“A bachelor’s degree in accounting.”*
-
-* **“Was he/she employed throughout his/her adult life?”**
-  → *“Yes.”*
-
-* **“What was his/her main occupation or job throughout his/her adult life?”**
-  → *“He was an accountant for about forty years, working at a mid-size accounting firm.”*
-
-* **“What is or was his/her last occupation or job?”**
-  → *“Senior accountant at Morrison & Associates.”*
-
-* **“Is he/she retired?”**
-  → *“Yes.”*
-
-* **“When did he/she retire?”**
-  → *“Two years ago, in 2022.”*
-
-* **“Why did he/she retire?”**
-  → *“He had reached retirement age and felt ready, and he was finding the newer computer systems harder to learn.”*
-
----
-
-### **Important Constraints**
-
-* Never contradict this profile.
-* Do not infer medical conditions unless directly asked (and none are specified).
-* If the interviewer probes about memory or thinking issues during retirement, acknowledge **difficulty with new computer systems**, but do **not** escalate beyond that.
-`
     this.conversationHistory = [];
     this.isActive = false;
     this.lastInterviewerMessage = '';
   }
 
-  start() {
+  /**
+   * Initialize the simulated user by loading the candidate config from server
+   */
+  async initialize() {
+    if (this.initialized) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/prompts/candidate');
+      if (!response.ok) {
+        throw new Error(`Failed to load candidate config: ${response.status}`);
+      }
+
+      this.candidateConfig = await response.json();
+      this.systemPrompt = this.candidateConfig.prompt;
+      this.initialized = true;
+    } catch (error) {
+      console.error('[SimulatedUser] Failed to initialize:', error);
+      // Fallback to a basic config if server is unavailable
+      this.candidateConfig = {
+        name: 'Candidate',
+        model: 'gpt-4',
+        role: 'candidate',
+        generation_settings: {
+          max_tokens: 150,
+          temperature: 0,
+          presence_penalty: 0.1
+        }
+      };
+      this.systemPrompt = `You are a job candidate being interviewed. Your background:
+- nurse with 3 years experience
+- Worked at pediatric hospitals
+
+Keep responses conversational and realistic but very short. Please respond only with what you say and not the entire conversation history.`;
+      this.initialized = true;
+    }
+  }
+
+  async start() {
+    await this.initialize();
     this.isActive = true;
     this.conversationHistory = [];
     this.lastInterviewerMessage = '';
@@ -99,6 +81,9 @@ When asked:
   async generateResponse(interviewerMessage = '') {
     console.log('[SimulatedUser] generateResponse called');
     console.log('[SimulatedUser] isActive:', this.isActive);
+
+    // Ensure we're initialized
+    await this.initialize();
 
     if (!this.isActive) {
       console.log('[SimulatedUser] Cannot generate response - inactive');
@@ -171,11 +156,11 @@ When asked:
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4',
+          model: this.candidateConfig.model || 'gpt-4',
           messages: messages,
-          max_tokens: 150,
-          temperature: 0,
-          presence_penalty: 0.1,
+          max_tokens: this.candidateConfig.generation_settings?.max_tokens || 150,
+          temperature: this.candidateConfig.generation_settings?.temperature || 0,
+          presence_penalty: this.candidateConfig.generation_settings?.presence_penalty || 0.1,
         })
       });
 
