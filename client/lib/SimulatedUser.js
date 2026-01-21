@@ -274,22 +274,9 @@ When asked:
 
       if (event.transcript) {
         content = event.transcript;
-      } else if (event.text) {
-        content = event.text;
-      } else if (event.response?.output) {
-        const outputs = event.response.output;
-        for (const output of outputs) {
-          if (output.type === 'message' && output.content) {
-            for (const contentPart of output.content) {
-              if (contentPart.type === 'text') {
-                content += contentPart.text;
-              }
-            }
-          }
-        }
-      }
+      } 
 
-      if (content.toLowerCase().includes('this is the end of this part')) {
+      if (content.toLowerCase().includes('this part of the interview')) {
         return true;
       }
     }
