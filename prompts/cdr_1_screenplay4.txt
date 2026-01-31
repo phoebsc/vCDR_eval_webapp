@@ -1,0 +1,483 @@
+title: "CDR Level 1.0 - Scenario 4: Matched Story, Acceptable Detail"
+description: "Subject correctly identifies events and provides good detail - voicebot provides minimal prompting"
+cdr_score: 1.0
+scenario: "A 75-year-old retired engineer with mild cognitive impairment who provides comprehensive responses"
+test_focus: "Voicebot recognition when adequate detail is provided despite mild cognitive impairment"
+
+partner_responses:
+  meminf1:
+    question: "Does he/she have a problem with his/her memory or thinking? Would you say yes or no?"
+    response: "Yes, definitely. It's become quite noticeable over the past couple of years."
+    
+  meminf1.1:
+    question: "Is this a consistent problem?"
+    response: "Yes, it's very consistent. He forgets things daily now."
+    
+  meminf2:
+    question: "Can he/she recall events?"
+    response: "Sometimes. He remembers some things but often gets confused about when things happened or forgets important details."
+    
+  meminf3:
+    question: "Can he/she remember a short list of 5 items without written reminders? For example, if he/she needs to shop for 5 items at the store, could he/she remember the list of items without a written reminder? Would you say, usually, sometimes, or rarely?"
+    response: "Rarely. I have to write everything down now or he'll forget half the list."
+    
+  meminf4:
+    question: "Has there been some decline in memory during the past year? Would you say yes or no?"
+    response: "Yes, there's been a significant decline. Much worse than just normal aging."
+    
+  meminf5:
+    question: "In your opinion, is his/her memory impaired to such a degree that it would have interfered with his/her activities of daily life a few years ago (or pre-retirement activities)? Would you say yes or no?"
+    response: "Yes, I think it would have. He has trouble managing appointments and medications now, so it definitely would have affected his work."
+    
+  meminf6:
+    question: "Does he/she completely forget a major event within a few weeks of the event? For example, a trip, a party, a family wedding. Would you say, usually, sometimes, or rarely?"
+    response: "Sometimes. He forgot about our grandson's birthday party last month until I reminded him the day of."
+    
+  meminf7:
+    question: "Does he/she forget pertinent details about the major event? For example, does he/she forget when the major event took place or who was in attendance at the event? Would you say, usually, sometimes, or rarely?"
+    response: "Usually. He might remember we went somewhere but forget who we saw or what we did."
+    
+  meminf8:
+    question: "Does he/she forget important information of the distant past, such as 10 or more years ago? For example, his/her date of birth, wedding date, or place of employment? Would you say, usually, sometimes, or rarely?"
+    response: "Sometimes. He occasionally gets confused about dates or details from long ago, though not as much as recent things."
+
+  recent_events_1week:
+    question: "Tell me about some recent event in his/her life that he/she should remember - within the past week."
+    initial_response: "We went to Home Depot."
+    
+    voicebot_prompt: "Can you tell me more about that Home Depot visit? What details can you share about that experience?"
+    
+    partner_detailed_response: "Last Monday we went to the hardware store to get supplies for fixing our back deck. We went to Home Depot around 10 AM. I drove us there since he's not comfortable driving in busy traffic anymore. We needed wood stain, brushes, and sandpaper. He was helpful picking out the right stain color and knew what materials we needed. We spent about an hour there looking at options. The total was around $85. He was tired when we got home but satisfied that we got everything needed for the project."
+
+  recent_events_1month:
+    question: "Tell me about some recent event in his/her life that he/she should remember - within the past month."
+    initial_response: "We went to Bob's retirement party."
+    
+    voicebot_prompt: "Please tell me more about Bob's retirement party. Can you provide more details about this event?"
+    
+    partner_detailed_response: "Two and a half weeks ago we went to our friend Bob's retirement party at the VFW hall. It was Saturday evening at 6 PM. Bob worked with him at Ford for over 20 years. About 40 people were there including many of his old work colleagues. There was dinner, a slide show of Bob's career, and some speeches. He enjoyed seeing his old friends but got overwhelmed with all the conversations and names. We stayed until about 8:30 PM when he said he was getting tired."
+    
+  meminf10a:
+    question: "When was he/she born?"
+    response: "January 22nd, 1949."
+    
+  meminf11a:
+    question: "Where was he/she born?"
+    response: "Detroit, Michigan."
+    
+  meminf12a.1:
+    question: "I'd like to ask you a few questions about the most recent school that he/she attended. First, what was the name of the last school he/she attended?"
+    response: "Michigan State University."
+    
+  meminf12a.2:
+    question: "What was the location of the last school he/she attended?"
+    response: "East Lansing, Michigan."
+    
+  meminf12a.3:
+    question: "What was the highest grade completed or degree he/she received from that school?"
+    response: "Bachelor's degree in Engineering."
+    
+  meminf13a.1:
+    question: What was his/her main occupation or job throughout his/her adult life? Or, if he/she was not employed, what was his/her spouse’s main job?"
+    response: "He was an automotive engineer for about 35 years."
+    
+  meminf13b:
+    question: "What is or was his/her last (most recent) occupation or job? Or, if he/she was not employed, what was his/her spouse’s last job?"
+    response: "Senior engineer at Ford Motor Company."
+    
+  cominf1.1:
+    question: "Is he/she retired? Would you say yes or no?"
+    response: "Yes."
+    
+  cominf1.2:
+    question: "When did he/she retire?"
+    response: "2019, about five years ago."
+    
+  cominf1.3:
+    question: "Why did he/she retire?"
+    response: "Well, he says it was just time, but honestly I think his memory problems were making it hard for him to keep up with the demands of the job. He was forgetting meetings and having trouble with the new computer systems."
+
+
+  # Partner - Orientation Box
+  orisp1:
+    question: "How often does he/she know the exact: Date of the Month? Would you say, usually, sometimes, or rarely?"
+    response: "Rarely. He's often off by several days or even a week."
+    
+  orisp2:
+    question: "How often does he/she know the exact: Month? Would you say, usually, sometimes, or rarely?"
+    response: "Sometimes. He knows the general season but might be confused about the exact month."
+    
+  orisp3:
+    question: "How often does he/she know the exact: Year? Would you say, usually, sometimes, or rarely?"
+    response: "Usually. He still knows what year it is most of the time."
+    
+  orisp4:
+    question: "How often does he/she know the exact: Day of Week? Would you say, usually, sometimes, or rarely?"
+    response: "Rarely. He's constantly asking me what day it is."
+    
+  orisp5:
+    question: "Does he/she have difficulty with time relationships? Would you say, usually, sometimes, or rarely?"
+    response: "Usually. He gets very confused about when things happened - last week, last month, it's all mixed up."
+    
+  orisp6:
+    question: "Can he/she find his/her way around familiar streets? Would you say, usually, sometimes, or rarely?"
+    response: "Sometimes. Even in our own neighborhood, he's gotten lost a few times."
+    
+  orisp7:
+    question: "How often does he/she know how to get from one place to another outside his/her neighborhood? Would you say, usually, sometimes, or rarely?"
+    response: "Rarely. I have to drive everywhere now because he gets completely lost."
+    
+  orisp8:
+    question: "How often can he/she find his/her way around indoors? Would you say, usually, sometimes, or rarely?"
+    response: "Sometimes. He gets confused in large buildings or places he doesn't visit often."
+
+  # Partner - Judgment & Problem Solving Box
+  judsp1:
+    question: "In general, if you had to rate his/her abilities to solve problems at the present time, would you consider them: as good as they have ever been; good, but not as good as before; fair; poor; or no ability at all?"
+    response: "Fair."
+    
+  judsp1a:  
+    question: "What have you noticed specifically? For example, have you observed any difficulties with managing money, handling financial transactions, or solving everyday problems?"
+    response:"He can still figure out simple problems, but anything complex really confuses him now."
+    
+  judsp2:
+    question: "Rate his/her ability to cope with small sums of money (for example, calculate change, leave a small tip). Would you say, no loss, some loss, or severe loss?"
+    response: "Some loss. He gets confused with tips and often gives too much or too little. I usually handle the money now."
+    
+  judsp3:
+    question: "Rate his/her ability to handle complicated financial or business transactions (for example, balance check-book, pay bills). Would you say, no loss, some loss, or severe loss?"
+    response: "Severe loss. I have to handle all the bills and banking now. He gets very confused with numbers and forgets what he's already paid."
+    
+  judsp4:
+    question: "Can he/she handle a household emergency (for example, plumbing leak, small fire)? Would you say as well as before or worse than before?"
+    response: "Worse than before. He gets very flustered and doesn't think clearly in stressful situations."
+    
+  judsp4a:
+    question: "Is that due to trouble with thinking? Would you say yes or no?"
+    response: "Yes, definitely. He just can't process what needs to be done when there's pressure."
+    
+  judsp6:
+    question: "Can he/she understand situations or explanations? Would you say, usually, sometimes, or rarely?"
+    response: "Sometimes. I often have to explain things multiple times or break them down into simpler steps."
+    
+  judsp7:
+    question: "Does he/she behave appropriately in social situations and interactions with other people? Would you say, usually, sometimes, or rarely?"
+    response: "Sometimes. He repeats stories and sometimes says inappropriate things because he forgets what's socially acceptable."
+    
+  judsp7a:
+    question: "Is this a change from his/her longstanding behavior? Would you say yes or no?"
+    response: "Yes, this is definitely a change. He used to be very socially aware."
+
+
+  # Partner – Community Affairs Box
+  comsp1:
+    question: "Is he/she still working? Would you say, yes, no, or never employed?"
+    response: "No."
+
+  comsp2:
+    question: "Did memory or thinking problems contribute to his/her decision to retire? Would you say yes or no?"
+    response: "Yes."
+
+  comsp4a:
+    question: "Did he/she ever drive a car? Would you say yes or no?"
+    response: "Yes."
+
+  comsp4b:
+    question: "Does he/she drive a car now? Would you say yes or no?"
+    response: "No."
+
+  comsp4c: 
+    question: "Is this because of memory or thinking problems? Would you say yes or no?"
+    response: "Yes. He got lost several times and became confused, so it didn’t feel safe."
+
+  comsp6:
+    question: "Is he/she able to independently shop for his/her needs? Would you say, rarely or never, sometimes, or usually?"
+    response: "Rarely."
+
+  comsp7:
+    question: "Is he/she able to independently carry out activities outside the home? Would you say, rarely or never, sometimes, or usually?"
+    response: "Rarely."
+
+  comsp8:
+    question: "Is he/she taken to social functions outside a family home? Would you say yes or no?"
+    response: "Yes."
+
+  comsp9:
+    question: "Would a casual observer of his/her behavior think he/she was ill? Would you say yes or no?"
+    response: "Yes."
+
+
+  # Partner – Home & Hobbies Box
+  homsp1a:
+    question: "From a memory and thinking standpoint, what changes have occurred in his/her abilities to perform household chores?"
+    response: "They’ve changed."
+
+    voicebot_prompt: "Could you describe what kinds of changes you’ve noticed?"
+
+    response: "He forgets steps, leaves tasks unfinished, and sometimes misuses appliances."
+
+  homsp1b:
+    question: "From a memory and thinking standpoint, what household chores can he/she still do well?"
+    response: "Not many."
+
+    voicebot_prompt: "Are there any simple tasks he can still help with?"
+
+    response: "He can help with very simple tasks if I guide him, like holding items or doing one step at a time."
+
+  homsp2a:
+    question: "From a memory and thinking standpoint, what changes have occurred in his/her abilities to perform hobbies?"
+    response: "He doesn’t really do them anymore."
+
+    voicebot_prompt: "Why is that?"
+
+    response: "He can’t follow the steps and gets frustrated or confused."
+
+  homsp2b:
+    question: "From a memory and thinking standpoint, what hobbies can he/she still do well?"
+    response: "I’m not sure."
+
+    voicebot_prompt: "Does he still enjoy any leisure activities, like watching TV or reading?"
+
+    response: "He watches familiar TV shows and looks at magazines."
+
+
+  # Partner – Personal Care Box
+  perspa:
+    question: "Can he/she dress themselves? Would you say he/she does not need help, occasionally needs help, frequently needs help, or is unable to dress themselves?"
+    response: "He needs help."
+
+    voicebot_prompt: "Would you say that’s occasionally or frequently?"
+
+    response: "Frequently. He gets confused about clothing and the order."
+
+  perspb:
+    question: "What about washing and grooming? Would you say he/she does not need help, needs reminders, sometimes needs help, or always or nearly always needs help?"
+    response: "Always needs help."
+
+    voicebot_prompt: "So you usually have to guide him through those routines?"
+
+    response: "Yes, I do."
+
+  perspc:
+    question: "Now I want to ask you about his/her eating habits. Would you say he/she eats cleanly with proper utensils, eats messily or mostly with a spoon, only eats simple solids, or needs someone to feed him/her?"
+    response: "He eats, but it’s messy."
+
+    voicebot_prompt: "Does he still feed himself?"
+
+    response: "Yes, but mostly with a spoon and with supervision."
+
+  perspd:
+    question: "Finally, I'd like to ask you about bladder and bowel control. Would you say he/she has normal, complete control, occasionally wets the bed, frequently wets the bed, or has no control over bladder or bowel movements?"
+    response: "There are some accidents."
+
+    voicebot_prompt: "Would you say that happens occasionally or frequently?"
+
+    response: "Occasionally."
+    
+
+participant_responses:
+  mem1:
+    question: "Do you have problems with memory or thinking? Would you say yes or no?"
+    response: "Yes, I do have some problems. I forget appointments sometimes and have trouble remembering names."
+
+  recent_events_1week:
+    question: "A few moments ago your spouse told me about a recent experience you had within the past week. Will you tell me something about that?"
+    response: "Oh yes, she probably mentioned our trip to Home Depot."
+    
+    hardware_store_details: "Last Monday we went to Home Depot to get supplies for our deck project. We went in the morning, around 10 AM I think. My wife drove because I don't like driving in heavy traffic anymore. We needed to get wood stain for the back deck - it's been looking weathered lately. We also got brushes and sandpaper. I remember helping pick out the stain color - we went with a natural cedar tone. We spent quite a while there looking at all the options. The total came to around $80 or $90, I think. It was good to have a project to work on, though I was pretty tired when we got back home."
+    
+    voicebot_acknowledgment: "Thank you for those details about your Home Depot trip. That sounds like a productive morning."
+
+  recent_events_1month:
+    question: "Your spouse also mentioned another recent experience you had within the past month. Will you tell me about that?"
+    response: "Ah yes, Bob's retirement party. That was a nice evening."
+    
+    retirement_party_details: "It was about two and a half weeks ago, maybe three weeks. We went to Bob's retirement party at the VFW hall on Saturday evening. Bob was a colleague of mine at Ford - we worked together for many years. The party started at 6 PM. There were quite a few people there, maybe 30 or 40, including a lot of folks from the old engineering department. They had dinner and a slide show with pictures from Bob's career. It was nice seeing some of the guys I used to work with, though I have to admit I had trouble remembering some of their names. We left around 8:30 because I was getting tired and overwhelmed with all the conversations. But it was good to celebrate Bob - he deserved a nice send-off."
+    
+    voicebot_followup: "That sounds like a meaningful way to celebrate Bob's retirement. Thank you for sharing those details."
+    
+  mem3a:
+    question: "I will give you a name and address to remember for a few minutes. Repeat this name and address after me: John. Brown. 42. Market Street. Chicago."
+    response: "John Brown, 43 Market Street, Chicago."
+    attempts: 2
+    correction: "John Brown, 42 Market Street, Chicago."
+    
+  mem4a:
+    question: "When were you born?"
+    response: "January 22nd, 1949."
+    
+  mem5a:
+    question: "Where were you born?"
+    response: "Detroit, Michigan."
+    
+  mem6a.1:
+    question: "I'd like to ask you a few questions about the most recent school that you attended. First, what was the name of the last school you attended?"
+    response: "Michigan State University."
+    
+  mem6a.2:
+    question: "What was the location of the last school you attended?"
+    response: "East Lansing, Michigan."
+    
+  mem6a.3:
+    question: "What was the highest grade completed or degree you received from that school?"
+    response: "Bachelor's degree in Engineering."
+    
+  mem7a:
+    question: "What was your main occupation or job throughout your adult life?  Or, if you were not employed, what was your spouse's main job?"
+    response: "I was an engineer. Worked in automotive mostly."
+
+  mem8a:
+    question: "What was your last (most recent) occupation or job? Or, if you were not employed, what was your spouse’s last job?"
+    response: "I was an engineer. Worked in automotive mostly."
+    
+  mem9a.1:
+    question: "Are you retired? Would you say, yes, no, or never employed?"
+    response: "Yes."
+    
+  mem9a.2:
+    question: "When did you retire?"
+    response: "Oh, about five years ago? Maybe 2019?"
+    
+  mem9a.3:
+    question: "Why did you retire?"
+    response: "I was getting to retirement age, and honestly, I was having trouble keeping up with all the new technology and procedures."
+    
+  mem10a:
+    question: "I previously asked you to remember a name and address. Please repeat the name and address I asked you to remember."
+    response: "John... John Brown. The address was... Market Street? I think it was 42? Chicago."
+    attempts: 1
+
+  # Subject - Orientation Box
+  mem12:
+    question: "What is the date today?"
+    response: "Today is... let me think... October? I'm not sure of the exact date. Maybe the 15th? Or 20th?"
+    
+  mem13:
+    question: "What day of the week is it?"
+    response: "Is it Tuesday? Or Wednesday? I get confused about the days."
+    
+  mem14:
+    question: "What is the month?"
+    response: "October, I think. Or is it November? Fall, anyway."
+    
+  mem15:
+    question: "What is the year?"
+    response: "2024."
+    
+  mem17:
+    question: "What town or city are you in?"
+    response: "We're in... Detroit area. Dearborn, I think? Or maybe it's Livonia? I get the suburbs mixed up."
+    
+  mem18:
+    question: "Without looking at your watch, a device, or a clock, about what time is it now?"
+    response: "I'd say it's... afternoon? Maybe 2 o'clock? Or 3? Time is really hard for me to judge anymore."
+    
+  mem19:
+    question: "Do you have a study partner who is working with you in this study? Would you say yes or no?"
+    response: "Yes, my wife is here with me."
+    
+  mem19a:
+    question: "What is your study partner's first name?"
+    response: "That's my wife... her name is... give me a second... Dorothy. Yes, Dorothy."
+    
+  mem19b:
+    question: "What is your study partner's relationship to you?"
+    response: "She's my wife."
+
+  # Subject - Judgment & Problem Solving Box
+  mem21:
+    question: "How are a turnip and a cauliflower alike?"
+    initial_response: "Well, they're both... white? And you eat them?"
+    voicebot_followup: "Yes, that's true. Can you think of something more specific that they have in common?"
+    second_response: "They're both... plants? That grow in the ground?"
+    voicebot_followup: "You're on the right track. Can you think of something more specific?"
+    final_response: "Oh, they're both vegetables."
+    attempts: 3
+    score: 0
+    
+  mem22:
+    question: "How are a desk and a bookcase alike?"
+    initial_response: "They're both... big? Made of wood?"
+    voicebot_followup: "That's one way they're alike. Can you think of something more specific?"
+    final_response: "They're both furniture."
+    attempts: 2
+    score: 0
+    
+  mem23a:
+    question: "What is the difference between a lie and a mistake?"
+    initial_response: "Well, a lie is... when you say something wrong? And a mistake is also wrong?"
+    voicebot_followup: "That's an interesting thought. Can you think of another way they might be alike?"
+    final_response: "A lie is when you say something wrong on purpose, and a mistake is when you do something wrong by accident."
+    attempts: 2
+    score: 0
+    
+  mem23b:
+    question: "What is the difference between a river and a canal?"
+    initial_response: "They both have water..."
+    voicebot_followup: "Yes, they do. Can you think of how they're different?"
+    second_response: "One is bigger than the other?"
+    voicebot_followup: "That's an interesting thought. Can you think of another way they might be different?"
+    final_response: "Oh, a river is natural, and a canal is made by people."
+    attempts: 3
+    score: 0
+    
+  mem24:
+    question: "How many nickels are in a dollar?"
+    response: "Let me think... a nickel is 5 cents... so... 10? No, wait... 20 nickels in a dollar."
+    score: 0
+    
+  mem25:
+    question: "How many quarters are in $6.75?"
+    response: "Four quarters is a dollar... so 6 dollars is 24 quarters... and 75 cents is... 3 more quarters... that's 27 quarters."
+    score: 0
+    
+  mem26:
+    question: "Subtract 3 from 20 and keep subtracting 3 from each new number all the way down."
+    response: "20, 17, 14, 11, 8, 5, 2... and then I can't subtract 3 from 2."
+    voicebot_prompt: "That is sufficient."
+    score: 0
+    
+  mem28:
+    question: "Upon arriving in a strange city, how would you locate a friend that you wished to see?"
+    initial_response: "I would... well, that's hard. I'm not good with technology anymore."
+    voicebot_followup: "That's okay. Take your time. Can you think of one specific thing you could try to locate your friend?"
+    final_response: "I guess I could ask someone to help me look them up on the internet, or maybe call information if that still exists. Or ask my wife to help me."
+    attempts: 2
+    score: 0
+    
+  mem29:
+    question: "Can you remind me what is the purpose of the conversation we are having today?"
+    response: "We're... talking about my memory? Some kind of test or evaluation?"
+
+voicebot_instructions:
+  scenario_type: "Partner Minimal Detail + Participant Comprehensive Response"
+  required_actions:
+    - "Prompt partner for additional details when responses are too brief"
+    - "Recognize when CDR 1 participant provides comprehensive detail immediately"
+    - "Provide appropriate acknowledgment for participant's detailed responses"
+    - "Avoid over-prompting participant when detail is adequate"
+    - "Administer new CDR modules: Partner Judgment & Problem Solving, Partner Orientation, Subject Orientation, Subject Judgment & Problem Solving"
+  success_criteria:
+    - "Successfully elicits detailed responses from partner through prompting"
+    - "Participant's comprehensive responses are appropriately acknowledged"
+    - "Differential handling based on response quality from each person"
+    - "Smooth interaction despite different response patterns"
+    - "All CDR modules completed with responses appropriate for CDR 1.0 level"
+  adaptive_testing: "Tests voicebot's adaptive prompting strategy based on individual response quality"
+  note: "Partner needs prompting while CDR 1 participant provides good detail despite mild cognitive impairment. New modules show moderate impairments in orientation and judgment/problem solving."
+  
+expected_outcomes:
+  matching_rate: "High (85-95%)"
+  irt_total_score: "Moderate (6-10)"
+  cdr_assessment: "1.0 - Mild impairment"
+  voicebot_performance: "Successfully recognizes adequate responses and provides appropriate acknowledgment, completes all CDR modules"
+  key_indicators:
+    - "Immediate recognition of correct events"
+    - "Good detail provided with minor uncertainties"
+    - "Acknowledgment of memory difficulties but functional recall"
+    - "Appropriate detail level for CDR 1 assessment"
+    - "Confidence supported through positive feedback"
+    - "Significant orientation difficulties (date, day, location confusion)"
+    - "Multiple attempts needed for problem-solving questions"
+    - "Partner reports moderate to severe impairments across multiple domains"
+
