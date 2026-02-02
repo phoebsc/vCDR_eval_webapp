@@ -130,9 +130,13 @@ export default function ResultsPage() {
                           }`}
                         >
                           <td className="py-4 px-6">
-                            <div className="font-mono text-sm text-gray-900">
+                            <button
+                              onClick={() => window.location.href = `/results/${run.run_id}`}
+                              className="font-mono text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer transition-colors"
+                              title="Click to view full transcript"
+                            >
                               {run.run_id}
-                            </div>
+                            </button>
                           </td>
                           <td className="py-4 px-6">
                             <div className="text-sm text-gray-700">

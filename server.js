@@ -3,7 +3,7 @@ import fs from "fs";
 import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { getSystemPrompt, getPromptConfig, getInterviewerPromptId, getSimulatedUserPromptId } from "./lib/promptLoader.js";
-import { initializeDatabase, saveBenchmarkRun, getBenchmarkRuns } from "./server/lib/database.js";
+import { initializeDatabase, saveBenchmarkRun, getBenchmarkRuns, getBenchmarkRun } from "./server/lib/database.js";
 import "dotenv/config";
 
 const app = express();
@@ -147,6 +147,23 @@ app.put("/api/benchmark-runs/:run_id", express.json(), async (req, res) => {
   } catch (error) {
     console.error("Error saving benchmark run:", error);
     res.status(500).json({ error: "Failed to save benchmark run" });
+  }
+});
+
+// GET /api/benchmark-runs/:run_id - Get full run details (must come before the general route)
+app.get("/api/benchmark-runs/:run_id", async (req, res) => {
+  try {
+    const { run_id } = req.params;
+    const run = await getBenchmarkRun(run_id);
+    console.log(`Retrieved full details for run: ${run_id}`);
+    res.json(run);
+  } catch (error) {
+    console.error("Error retrieving benchmark run details:", error);
+    if (error.message.includes('not found')) {
+      res.status(404).json({ error: `Benchmark run not found: ${req.params.run_id}` });
+    } else {
+      res.status(500).json({ error: "Failed to retrieve benchmark run details" });
+    }
   }
 });
 
