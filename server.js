@@ -1,7 +1,9 @@
 import express from "express";
 import fs from "fs";
+import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
-import { getSystemPrompt, getPromptConfig } from "./lib/promptLoader.js";
+import { getSystemPrompt, getPromptConfig, getInterviewerPromptId, getSimulatedUserPromptId } from "./lib/promptLoader.js";
+import { initializeDatabase, saveBenchmarkRun, getBenchmarkRuns } from "./server/lib/database.js";
 import "dotenv/config";
 
 const app = express();
@@ -104,6 +106,62 @@ app.get("/api/prompts/:promptName", async (req, res) => {
   }
 });
 
+// Benchmark API endpoints
+
+// POST /api/benchmark-runs - Create new run ID
+app.post("/api/benchmark-runs", async (req, res) => {
+  try {
+    const run_id = crypto.randomUUID();
+    const created_at = new Date().toISOString();
+
+    console.log(`Created new benchmark run ID: ${run_id}`);
+    res.json({ run_id, created_at });
+  } catch (error) {
+    console.error("Error creating benchmark run:", error);
+    res.status(500).json({ error: "Failed to create benchmark run" });
+  }
+});
+
+// PUT /api/benchmark-runs/:run_id - Save completed run
+app.put("/api/benchmark-runs/:run_id", express.json(), async (req, res) => {
+  try {
+    const { run_id } = req.params;
+    const runData = req.body;
+
+    // Validate required fields
+    if (!runData.conversation_history || !runData.event_log) {
+      return res.status(400).json({ error: "Missing required fields: conversation_history, event_log" });
+    }
+
+    // Add prompt IDs from server (server owns prompts)
+    const completeRunData = {
+      ...runData,
+      interviewer_prompt_id: runData.interviewer_prompt_id || getInterviewerPromptId(),
+      simulated_user_prompt_id: runData.simulated_user_prompt_id || getSimulatedUserPromptId()
+    };
+
+    const savedRun = await saveBenchmarkRun(run_id, completeRunData);
+    console.log(`Saved benchmark run: ${run_id}`);
+
+    res.json({ ok: true, run: savedRun });
+  } catch (error) {
+    console.error("Error saving benchmark run:", error);
+    res.status(500).json({ error: "Failed to save benchmark run" });
+  }
+});
+
+// GET /api/benchmark-runs - List saved runs (metadata only)
+app.get("/api/benchmark-runs", async (req, res) => {
+  try {
+    const runs = await getBenchmarkRuns();
+    console.log(`Retrieved ${runs.length} benchmark runs`);
+    res.json(runs);
+  } catch (error) {
+    console.error("Error retrieving benchmark runs:", error);
+    res.status(500).json({ error: "Failed to retrieve benchmark runs" });
+  }
+});
+
 // Render the React client
 app.use("*", async (req, res, next) => {
   const url = req.originalUrl;
@@ -121,6 +179,12 @@ app.use("*", async (req, res, next) => {
     vite.ssrFixStacktrace(e);
     next(e);
   }
+});
+
+// Initialize database
+await initializeDatabase().catch(err => {
+  console.error('Failed to initialize database:', err);
+  process.exit(1);
 });
 
 app.listen(port, () => {

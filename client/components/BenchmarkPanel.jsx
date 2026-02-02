@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Play, Square, RotateCcw, Settings } from "react-feather";
+import { Play, Square, RotateCcw, Settings, FileText } from "react-feather";
 import Button from "./Button";
 
 function TranscriptView({ transcript }) {
@@ -155,6 +155,17 @@ export default function BenchmarkPanel({
           className="bg-orange-600"
         >
           Reset
+        </Button>
+      </div>
+
+      {/* View Results Button */}
+      <div className="flex">
+        <Button
+          onClick={() => window.location.href = '/results'}
+          icon={<FileText height={16} />}
+          className="bg-blue-600 w-full"
+        >
+          View Results
         </Button>
       </div>
 

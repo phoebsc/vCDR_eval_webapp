@@ -26,7 +26,7 @@ export class BenchmarkingService {
    * @param {Function} sendTextMessage - Function to send text messages to the voice bot
    * @param {Array} events - Current events array
    */
-  startRun(sendTextMessage, events = []) {
+  async startRun(sendTextMessage, events = []) {
     console.log('[BenchmarkingService] Starting benchmark run...');
 
     if (this.isRunning) {
@@ -34,20 +34,29 @@ export class BenchmarkingService {
       return;
     }
 
-    this.isRunning = true;
-    this.sendTextMessage = sendTextMessage;
+    try {
+      // Get new run ID from server
+      const runInfo = await this.createNewRun();
 
-    // Initialize new run data
-    this.currentRun = {
-      id: crypto.randomUUID(),
-      startTime: new Date(),
-      endTime: null,
-      transcript: [],
-      eventLog: [],
-      status: 'running'
-    };
+      this.isRunning = true;
+      this.sendTextMessage = sendTextMessage;
 
-    console.log('[BenchmarkingService] Created run:', this.currentRun.id);
+      // Initialize new run data with server-generated ID
+      this.currentRun = {
+        id: runInfo.run_id,
+        startTime: new Date(runInfo.created_at),
+        endTime: null,
+        transcript: [],
+        eventLog: [],
+        status: 'running',
+        processedEventIds: [] // Track processed events for deduplication
+      };
+
+      console.log('[BenchmarkingService] Created run:', this.currentRun.id);
+    } catch (error) {
+      console.error('[BenchmarkingService] Failed to start benchmark run:', error);
+      throw error;
+    }
 
     // Start the simulated user
     this.simulatedUser.start();
@@ -73,7 +82,7 @@ export class BenchmarkingService {
   /**
    * End the current benchmark run
    */
-  endRun() {
+  async endRun() {
     if (!this.isRunning || !this.currentRun) {
       return;
     }
@@ -90,8 +99,14 @@ export class BenchmarkingService {
       duration: this.currentRun.endTime - this.currentRun.startTime
     });
 
-    // Save the run data
-    this.saveRunData();
+    // Save the run data to server
+    try {
+      await this.saveRunToServer();
+      console.log('[BenchmarkingService] Run saved to server successfully');
+    } catch (error) {
+      console.error('[BenchmarkingService] Failed to save run to server:', error);
+      // Continue with completion callback even if save fails
+    }
 
     // Notify completion
     if (this.onRunComplete) {
@@ -121,7 +136,7 @@ export class BenchmarkingService {
     if (this.simulatedUser.isConversationEnded(events)) {
       console.log('[BenchmarkingService] Conversation ended detected');
       this.logEvent('system', 'Termination cue detected', { cue: 'That completes the interview' });
-      setTimeout(() => this.endRun(), 1000);
+      setTimeout(async () => await this.endRun(), 1000);
       return;
     }
 
@@ -300,37 +315,101 @@ export class BenchmarkingService {
   }
 
   /**
-   * Save run data to localStorage for persistence
+   * Create a new run ID from the server
+   * @returns {Promise<Object>} Run info with run_id and created_at
    */
-  saveRunData() {
-    if (!this.currentRun) return;
-
+  async createNewRun() {
     try {
-      console.log('Saving to path ', JSON.stringify(localStorage))
-      const savedRuns = JSON.parse(localStorage.getItem('benchmarkRuns') || '[]');
-      savedRuns.push(this.currentRun);
+      const response = await fetch('/api/benchmark-runs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
 
-      // Keep only the last 10 runs to avoid storage bloat
-      if (savedRuns.length > 10) {
-        savedRuns.splice(0, savedRuns.length - 10);
+      if (!response.ok) {
+        throw new Error(`Failed to create run: ${response.status} ${response.statusText}`);
       }
 
-      localStorage.setItem('benchmarkRuns', JSON.stringify(savedRuns));
+      const runInfo = await response.json();
+      console.log('[BenchmarkingService] Created new run ID:', runInfo.run_id);
+      return runInfo;
     } catch (error) {
-      console.error('Failed to save benchmark run data:', error);
+      console.error('[BenchmarkingService] Error creating new run:', error);
+      throw error;
     }
   }
 
   /**
-   * Get all saved benchmark runs
-   * @returns {Array} Array of saved benchmark runs
+   * Save completed run data to server
+   * @returns {Promise<void>}
    */
-  getSavedRuns() {
+  async saveRunToServer() {
+    if (!this.currentRun) {
+      throw new Error('No current run to save');
+    }
+
     try {
-      return JSON.parse(localStorage.getItem('benchmarkRuns') || '[]');
+      // Transform transcript to conversation_history format
+      const conversation_history = this.currentRun.transcript.map(entry => ({
+        speaker: entry.role === 'interviewer' ? 'interviewer' : 'simulated_user',
+        content: entry.message,
+        timestamp: entry.timestamp
+      }));
+
+      // Transform eventLog to server format
+      const event_log = this.currentRun.eventLog.map(entry => ({
+        timestamp: entry.timestamp,
+        source: entry.source,
+        action: entry.action,
+        data: entry.data || {}
+      }));
+
+      const payload = {
+        mode: 'benchmark',
+        conversation_history,
+        event_log
+        // Server will add prompt IDs automatically
+      };
+
+      const response = await fetch(`/api/benchmark-runs/${this.currentRun.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to save run: ${response.status} ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('[BenchmarkingService] Run saved successfully:', result);
     } catch (error) {
-      console.error('Failed to load benchmark runs:', error);
-      return [];
+      console.error('[BenchmarkingService] Error saving run to server:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all saved benchmark runs from server
+   * @returns {Promise<Array>} Array of saved benchmark runs metadata
+   */
+  async getSavedRuns() {
+    try {
+      const response = await fetch('/api/benchmark-runs');
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch runs: ${response.status} ${response.statusText}`);
+      }
+
+      const runs = await response.json();
+      console.log('[BenchmarkingService] Retrieved saved runs:', runs.length);
+      return runs;
+    } catch (error) {
+      console.error('[BenchmarkingService] Error fetching saved runs:', error);
+      return []; // Return empty array on error to maintain compatibility
     }
   }
 
