@@ -1,13 +1,15 @@
 import express from "express";
 import fs from "fs";
+import path from "path";
 import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
-import { getSystemPrompt, getPromptConfig, getInterviewerPromptId, getSimulatedUserPromptId } from "./lib/promptLoader.js";
+import { getSystemPrompt, getPromptConfig, getInterviewerPromptId, getSimulatedUserPromptId, generatePromptId } from "./lib/promptLoader.js";
 import { initializeDatabase, saveBenchmarkRun, getBenchmarkRuns, getBenchmarkRun } from "./server/lib/database.js";
 import "dotenv/config";
 
 const app = express();
 app.use(express.text());
+app.use(express.json());
 const port = process.env.PORT || 3000;
 const apiKey = process.env.OPENAI_API_KEY;
 
@@ -40,8 +42,35 @@ const sessionConfig = voiceBotSessionConfig;
 app.post("/session", async (req, res) => {
   const fd = new FormData();
   console.log(req.body);
-  fd.set("sdp", req.body);
-  fd.set("session", sessionConfig);
+
+  // Check if this is a JSON request with prompt selection
+  let sdpData, interviewerPromptName;
+  if (req.headers['content-type']?.includes('application/json')) {
+    sdpData = req.body.sdp;
+    interviewerPromptName = req.body.interviewerPrompt || 'interviewer';
+  } else {
+    // Backward compatibility - treat body as SDP directly
+    sdpData = req.body;
+    interviewerPromptName = 'interviewer';
+  }
+
+  // Build dynamic session configuration based on selected prompt
+  const promptConfig = getPromptConfig(interviewerPromptName);
+  const dynamicSessionConfig = JSON.stringify({
+    session: {
+      type: "realtime",
+      model: "gpt-realtime",
+      instructions: promptConfig.prompt,
+      audio: {
+        output: {
+          voice: "marin",
+        },
+      },
+    },
+  });
+
+  fd.set("sdp", sdpData);
+  fd.set("session", dynamicSessionConfig);
 
   const r = await fetch("https://api.openai.com/v1/realtime/calls", {
     method: "POST",
@@ -94,6 +123,26 @@ app.get("/api/openai-key", async (req, res) => {
   }
 });
 
+// API route to list all available prompt files
+app.get("/api/prompts", async (req, res) => {
+  try {
+    const promptsDir = path.join(process.cwd(), 'prompts');
+    const files = fs.readdirSync(promptsDir);
+    const promptFiles = files
+      .filter(file => file.endsWith('.txt'))
+      .map(file => ({
+        name: file.replace('.txt', ''),
+        filename: file
+      }));
+
+    console.log(`Found ${promptFiles.length} prompt files`);
+    res.json(promptFiles);
+  } catch (error) {
+    console.error('Error listing prompt files:', error);
+    res.status(500).json({ error: 'Failed to list prompt files' });
+  }
+});
+
 // API route for prompt configurations
 app.get("/api/prompts/:promptName", async (req, res) => {
   try {
@@ -133,11 +182,14 @@ app.put("/api/benchmark-runs/:run_id", express.json(), async (req, res) => {
       return res.status(400).json({ error: "Missing required fields: conversation_history, event_log" });
     }
 
-    // Add prompt IDs from server (server owns prompts)
+    // Generate prompt IDs based on selected prompt names
+    const interviewerPromptName = runData.interviewer_prompt_name || 'interviewer';
+    const userPromptName = runData.simulated_user_prompt_name || 'candidate';
+
     const completeRunData = {
       ...runData,
-      interviewer_prompt_id: runData.interviewer_prompt_id || getInterviewerPromptId(),
-      simulated_user_prompt_id: runData.simulated_user_prompt_id || getSimulatedUserPromptId()
+      interviewer_prompt_id: generatePromptId(interviewerPromptName),
+      simulated_user_prompt_id: generatePromptId(userPromptName)
     };
 
     const savedRun = await saveBenchmarkRun(run_id, completeRunData);

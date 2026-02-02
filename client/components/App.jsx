@@ -127,16 +127,17 @@ export default function App() {
   }
 
   // Benchmarking control functions
-  function startBenchmarkRun() {
+  function startBenchmarkRun(interviewerPrompt, userPrompt) {
     if (!isSessionActive || !benchmarkingService.current) {
       console.warn('Cannot start benchmark: session not active');
       return;
     }
 
+    console.log('[App] Starting benchmark with prompts:', { interviewerPrompt, userPrompt });
     setIsBenchmarkMode(true);
     setBenchmarkTranscript([]);
     setBenchmarkLog([]);
-    benchmarkingService.current.startRun(sendTextMessage, events);
+    benchmarkingService.current.startRun(sendTextMessage, events, interviewerPrompt, userPrompt);
   }
 
   function endBenchmarkRun() {

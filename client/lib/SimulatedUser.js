@@ -261,7 +261,7 @@ Keep responses conversational and realistic but very short. Please respond only 
         content = event.transcript;
       } 
 
-      if (content.toLowerCase().includes('this part of the interview')) {
+      if (content.toLowerCase().includes('that completes the interview')) {
         return true;
       }
     }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, FileText, Clock, Hash, User, Cpu, Activity } from 'react-feather';
+import { ArrowLeft, FileText, Clock, Hash, User, Cpu, Activity, Copy, Check } from 'react-feather';
 import Button from '../components/Button';
 
 export default function RunDetailPage({ runId }) {
@@ -7,6 +7,7 @@ export default function RunDetailPage({ runId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('transcript');
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (runId) {
@@ -56,6 +57,39 @@ export default function RunDetailPage({ runId }) {
 
   const handleBackToResults = () => {
     window.location.href = '/results';
+  };
+
+  const copyTranscriptToClipboard = async () => {
+    if (!run || !run.conversation_history) return;
+
+    // Format transcript as "AGENT: xxx\nPARTICIPANT: xxx\n..."
+    const formattedTranscript = run.conversation_history
+      .map(entry => {
+        const speaker = entry.speaker === 'interviewer' ? 'AGENT' : 'PARTICIPANT';
+        return `${speaker}: ${entry.content}`;
+      })
+      .join('\n');
+
+    try {
+      await navigator.clipboard.writeText(formattedTranscript);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
+    } catch (error) {
+      console.error('Failed to copy transcript:', error);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = formattedTranscript;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (fallbackError) {
+        console.error('Fallback copy failed:', fallbackError);
+      }
+      document.body.removeChild(textArea);
+    }
   };
 
   if (loading) {
@@ -186,14 +220,42 @@ export default function RunDetailPage({ runId }) {
                   Events ({run.event_log?.length || 0})
                 </div>
               </button>
+              <button
+                onClick={() => setActiveTab('prompts')}
+                className={`px-6 py-3 font-medium text-sm border-b-2 ${
+                  activeTab === 'prompts'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <FileText size={16} />
+                  Prompts
+                </div>
+              </button>
             </div>
           </div>
 
           <div className="p-6">
             {activeTab === 'transcript' && (
-              <div className="space-y-4">
-                {run.conversation_history && run.conversation_history.length > 0 ? (
-                  run.conversation_history.map((entry, index) => (
+              <div>
+                {/* Copy Transcript Button */}
+                {run.conversation_history && run.conversation_history.length > 0 && (
+                  <div className="mb-4 flex justify-end">
+                    <Button
+                      onClick={copyTranscriptToClipboard}
+                      icon={copied ? <Check height={16} /> : <Copy height={16} />}
+                      className={`text-sm ${copied ? 'bg-green-600' : 'bg-blue-600'}`}
+                    >
+                      {copied ? 'Copied!' : 'Copy Transcript'}
+                    </Button>
+                  </div>
+                )}
+
+                {/* Scrollable Transcript Container */}
+                <div className="max-h-96 overflow-y-auto space-y-4 pr-2">
+                  {run.conversation_history && run.conversation_history.length > 0 ? (
+                    run.conversation_history.map((entry, index) => (
                     <div key={index} className="border rounded-lg p-4">
                       <div className="flex items-center gap-3 mb-2">
                         <div className="flex items-center gap-2">
@@ -219,11 +281,12 @@ export default function RunDetailPage({ runId }) {
                       </div>
                     </div>
                   ))
-                ) : (
-                  <div className="text-center text-gray-500 py-8">
-                    No transcript data available
-                  </div>
-                )}
+                  ) : (
+                    <div className="text-center text-gray-500 py-8">
+                      No transcript data available
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -259,6 +322,46 @@ export default function RunDetailPage({ runId }) {
                     No event data available
                   </div>
                 )}
+              </div>
+            )}
+
+            {activeTab === 'prompts' && (
+              <div className="space-y-6">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Cpu className="text-green-600" size={16} />
+                    <h3 className="font-semibold text-green-800">Voice Bot (Interviewer)</h3>
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                      interviewer.txt
+                    </span>
+                  </div>
+                  <div className="bg-white border border-green-200 rounded p-3 text-sm max-h-48 overflow-y-auto">
+                    <p className="text-gray-600 italic mb-2">
+                      Prompt ID: {run.interviewer_prompt_id}
+                    </p>
+                    <div className="text-gray-700">
+                      Loading prompt content...
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <User className="text-blue-600" size={16} />
+                    <h3 className="font-semibold text-blue-800">Simulated User</h3>
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                      candidate.txt
+                    </span>
+                  </div>
+                  <div className="bg-white border border-blue-200 rounded p-3 text-sm max-h-48 overflow-y-auto">
+                    <p className="text-gray-600 italic mb-2">
+                      Prompt ID: {run.simulated_user_prompt_id}
+                    </p>
+                    <div className="text-gray-700">
+                      Loading prompt content...
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>

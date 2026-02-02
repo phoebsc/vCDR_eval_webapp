@@ -25,8 +25,10 @@ export class BenchmarkingService {
    * Start a new benchmark run
    * @param {Function} sendTextMessage - Function to send text messages to the voice bot
    * @param {Array} events - Current events array
+   * @param {string} interviewerPrompt - Name of the interviewer prompt to use
+   * @param {string} userPrompt - Name of the simulated user prompt to use
    */
-  async startRun(sendTextMessage, events = []) {
+  async startRun(sendTextMessage, events = [], interviewerPrompt = 'interviewer', userPrompt = 'candidate') {
     console.log('[BenchmarkingService] Starting benchmark run...');
 
     if (this.isRunning) {
@@ -49,7 +51,9 @@ export class BenchmarkingService {
         transcript: [],
         eventLog: [],
         status: 'running',
-        processedEventIds: [] // Track processed events for deduplication
+        processedEventIds: [], // Track processed events for deduplication
+        selectedInterviewerPrompt: interviewerPrompt,
+        selectedUserPrompt: userPrompt
       };
 
       console.log('[BenchmarkingService] Created run:', this.currentRun.id);
@@ -368,8 +372,9 @@ export class BenchmarkingService {
       const payload = {
         mode: 'benchmark',
         conversation_history,
-        event_log
-        // Server will add prompt IDs automatically
+        event_log,
+        interviewer_prompt_name: this.currentRun.selectedInterviewerPrompt,
+        simulated_user_prompt_name: this.currentRun.selectedUserPrompt
       };
 
       const response = await fetch(`/api/benchmark-runs/${this.currentRun.id}`, {

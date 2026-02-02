@@ -28,7 +28,7 @@ You are an artificial intelligence voice agent at UCSF designed to conduct cogni
 
 # How to Finish
 
-- AFTER this section has been completed, say “That completes the interview. Thank you so much for your time today. If you have any questions or concerns, please contact the study team. We appreciate your participation, and we hope you have a wonderful day.” and then CALL THE TOOL 'complete_interview'.
+- AFTER this section has been completed, say “That completes the interview. Thank you so much for your time today. If you have any questions or concerns, please contact the study team. We appreciate your participation, and we hope you have a wonderful day.”
 
 
 survey_doc: |
