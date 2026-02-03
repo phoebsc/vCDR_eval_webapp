@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, FileText, Clock, Hash, User, Cpu, Activity, Copy, Check } from 'react-feather';
+import { ArrowLeft, FileText, Clock, Hash, User, Cpu, Activity, Copy, Check, BarChart, RefreshCw } from 'react-feather';
 import Button from '../components/Button';
 
 export default function RunDetailPage({ runId }) {
@@ -8,12 +8,33 @@ export default function RunDetailPage({ runId }) {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('transcript');
   const [copied, setCopied] = useState(false);
+  const [prompts, setPrompts] = useState({ interviewer: null, user: null });
+  const [promptsLoading, setPromptsLoading] = useState(false);
+  const [qualityMetrics, setQualityMetrics] = useState(null);
+  const [metricsComputing, setMetricsComputing] = useState(false);
 
   useEffect(() => {
     if (runId) {
       fetchRunDetails();
     }
   }, [runId]);
+
+  // Fetch prompt content when run data is available
+  useEffect(() => {
+    if (run && run.interviewer_prompt_name && run.simulated_user_prompt_name) {
+      fetchPromptContent();
+    }
+  }, [run]);
+
+  // Set quality metrics from run data if available (no automatic fetching)
+  useEffect(() => {
+    if (run && run.run_id) {
+      if (run.quality_metrics) {
+        setQualityMetrics(run.quality_metrics);
+      }
+      // Note: We do NOT automatically fetch/compute metrics - only when user clicks button
+    }
+  }, [run]);
 
   const fetchRunDetails = async () => {
     try {
@@ -36,6 +57,61 @@ export default function RunDetailPage({ runId }) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPromptContent = async () => {
+    try {
+      setPromptsLoading(true);
+
+      const [interviewerResponse, userResponse] = await Promise.all([
+        fetch(`/api/prompts/${run.interviewer_prompt_name}`),
+        fetch(`/api/prompts/${run.simulated_user_prompt_name}`)
+      ]);
+
+      let interviewerPrompt = null, userPrompt = null;
+
+      if (interviewerResponse.ok) {
+        interviewerPrompt = await interviewerResponse.json();
+      }
+
+      if (userResponse.ok) {
+        userPrompt = await userResponse.json();
+      }
+
+      setPrompts({
+        interviewer: interviewerPrompt,
+        user: userPrompt
+      });
+    } catch (err) {
+      console.error('Error fetching prompt content:', err);
+    } finally {
+      setPromptsLoading(false);
+    }
+  };
+
+  // Note: fetchQualityMetrics removed - we only load metrics from run data or compute on demand
+
+  const computeQualityMetrics = async () => {
+    try {
+      setMetricsComputing(true);
+      const response = await fetch(`/api/benchmark-runs/${run.run_id}/metrics`, {
+        method: 'POST'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setQualityMetrics(data.metrics);
+      } else {
+        const errorData = await response.json();
+        console.error('Error computing quality metrics:', errorData.error);
+        alert(`Failed to compute quality metrics: ${errorData.error}`);
+      }
+    } catch (err) {
+      console.error('Error computing quality metrics:', err);
+      alert('Failed to compute quality metrics');
+    } finally {
+      setMetricsComputing(false);
     }
   };
 
@@ -233,6 +309,22 @@ export default function RunDetailPage({ runId }) {
                   Prompts
                 </div>
               </button>
+              <button
+                onClick={() => setActiveTab('metrics')}
+                className={`px-6 py-3 font-medium text-sm border-b-2 ${
+                  activeTab === 'metrics'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <BarChart size={16} />
+                  Quality Metrics
+                  {qualityMetrics && (
+                    <span className="bg-green-100 text-green-800 text-xs px-1.5 py-0.5 rounded">✓</span>
+                  )}
+                </div>
+              </button>
             </div>
           </div>
 
@@ -332,7 +424,7 @@ export default function RunDetailPage({ runId }) {
                     <Cpu className="text-green-600" size={16} />
                     <h3 className="font-semibold text-green-800">Voice Bot (Interviewer)</h3>
                     <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                      interviewer.txt
+                      {run.interviewer_prompt_name || 'interviewer'}.txt
                     </span>
                   </div>
                   <div className="bg-white border border-green-200 rounded p-3 text-sm max-h-48 overflow-y-auto">
@@ -340,7 +432,13 @@ export default function RunDetailPage({ runId }) {
                       Prompt ID: {run.interviewer_prompt_id}
                     </p>
                     <div className="text-gray-700">
-                      Loading prompt content...
+                      {promptsLoading ? (
+                        <div className="text-gray-500">Loading prompt content...</div>
+                      ) : prompts.interviewer ? (
+                        <pre className="whitespace-pre-wrap text-sm">{prompts.interviewer.prompt}</pre>
+                      ) : (
+                        <div className="text-red-500">Failed to load prompt content</div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -350,7 +448,7 @@ export default function RunDetailPage({ runId }) {
                     <User className="text-blue-600" size={16} />
                     <h3 className="font-semibold text-blue-800">Simulated User</h3>
                     <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                      candidate.txt
+                      {run.simulated_user_prompt_name || 'candidate'}.txt
                     </span>
                   </div>
                   <div className="bg-white border border-blue-200 rounded p-3 text-sm max-h-48 overflow-y-auto">
@@ -358,10 +456,215 @@ export default function RunDetailPage({ runId }) {
                       Prompt ID: {run.simulated_user_prompt_id}
                     </p>
                     <div className="text-gray-700">
-                      Loading prompt content...
+                      {promptsLoading ? (
+                        <div className="text-gray-500">Loading prompt content...</div>
+                      ) : prompts.user ? (
+                        <pre className="whitespace-pre-wrap text-sm">{prompts.user.prompt}</pre>
+                      ) : (
+                        <div className="text-red-500">Failed to load prompt content</div>
+                      )}
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {activeTab === 'metrics' && (
+              <div className="space-y-6 max-h-[calc(100vh-24rem)] overflow-y-auto pr-2">
+                {/* Metrics Header */}
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">Quality Metrics Analysis</h3>
+                  <div className="flex gap-2">
+                    {qualityMetrics && (
+                      <Button
+                        onClick={computeQualityMetrics}
+                        icon={<RefreshCw height={16} />}
+                        className="bg-blue-600 text-sm"
+                        disabled={metricsComputing}
+                      >
+                        {metricsComputing ? 'Recomputing...' : 'Recompute'}
+                      </Button>
+                    )}
+                    {!qualityMetrics && (
+                      <Button
+                        onClick={computeQualityMetrics}
+                        icon={<BarChart height={16} />}
+                        className="bg-green-600 text-sm"
+                        disabled={metricsComputing}
+                      >
+                        {metricsComputing ? 'Computing...' : 'Compute Metrics'}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Metrics Content */}
+                {metricsComputing && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <RefreshCw className="animate-spin text-blue-600" size={16} />
+                      <div className="text-blue-800">
+                        Computing quality metrics for this benchmark run...
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {!qualityMetrics && !metricsComputing && (
+                  <div className="text-center py-12 bg-gray-50 rounded-lg">
+                    <BarChart className="mx-auto text-gray-400 mb-4" size={48} />
+                    <div className="text-gray-600 mb-2">Quality metrics not yet computed for this run</div>
+                    <div className="text-sm text-gray-500 mb-4">
+                      Click the button below to analyze this conversation.<br />
+                      <strong>Note:</strong> This will use API resources and may take some time.
+                    </div>
+                    <Button
+                      onClick={computeQualityMetrics}
+                      icon={<BarChart height={16} />}
+                      className="bg-green-600"
+                    >
+                      Compute Quality Metrics
+                    </Button>
+                  </div>
+                )}
+
+                {qualityMetrics && (
+                  <div className="space-y-6">
+                    {/* Metrics Summary */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Activity className="text-green-600" size={16} />
+                          <h4 className="font-semibold text-green-800">Engagement Score</h4>
+                        </div>
+                        <div className="text-2xl font-bold text-green-900">
+                          {qualityMetrics.metrics?.participant_engagement?.engagement_score || 'N/A'}
+                          {qualityMetrics.metrics?.participant_engagement?.engagement_score && '%'}
+                        </div>
+                      </div>
+
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Hash className="text-blue-600" size={16} />
+                          <h4 className="font-semibold text-blue-800">Total Turns</h4>
+                        </div>
+                        <div className="text-2xl font-bold text-blue-900">
+                          {qualityMetrics.metrics?.conversation_flow?.total_turns || 'N/A'}
+                        </div>
+                      </div>
+
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Clock className="text-purple-600" size={16} />
+                          <h4 className="font-semibold text-purple-800">Duration</h4>
+                        </div>
+                        <div className="text-2xl font-bold text-purple-900">
+                          {qualityMetrics.metrics?.conversation_flow?.duration_minutes
+                            ? `${Math.round(qualityMetrics.metrics.conversation_flow.duration_minutes)}m`
+                            : 'N/A'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Detailed Metrics */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Conversation Flow */}
+                      {qualityMetrics.metrics?.conversation_flow && (
+                        <div className="bg-white border rounded-lg p-4">
+                          <h4 className="font-semibold text-gray-900 mb-3">Conversation Flow</h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Interviewer Turns:</span>
+                              <span className="font-medium">{qualityMetrics.metrics.conversation_flow.interviewer_turns}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Participant Turns:</span>
+                              <span className="font-medium">{qualityMetrics.metrics.conversation_flow.participant_turns}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Turn Ratio:</span>
+                              <span className="font-medium">{qualityMetrics.metrics.conversation_flow.turn_ratio}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Participant Engagement */}
+                      {qualityMetrics.metrics?.participant_engagement && (
+                        <div className="bg-white border rounded-lg p-4">
+                          <h4 className="font-semibold text-gray-900 mb-3">Participant Engagement</h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Avg Response Length:</span>
+                              <span className="font-medium">{qualityMetrics.metrics.participant_engagement.avg_response_length} chars</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Response Rate:</span>
+                              <span className="font-medium">{qualityMetrics.metrics.participant_engagement.response_rate?.toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Conversation Quality */}
+                      {qualityMetrics.metrics?.conversation_quality && (
+                        <div className="bg-white border rounded-lg p-4">
+                          <h4 className="font-semibold text-gray-900 mb-3">Conversation Quality</h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Completeness Score:</span>
+                              <span className="font-medium">{qualityMetrics.metrics.conversation_quality.completeness_score}%</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Flow Score:</span>
+                              <span className="font-medium">{qualityMetrics.metrics.conversation_quality.flow_score}%</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Naturalness Score:</span>
+                              <span className="font-medium">{qualityMetrics.metrics.conversation_quality.naturalness_score}%</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Analysis Details */}
+                      {qualityMetrics.details && (
+                        <div className="bg-white border rounded-lg p-4">
+                          <h4 className="font-semibold text-gray-900 mb-3">Analysis Details</h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Questions Analyzed:</span>
+                              <span className="font-medium">{qualityMetrics.details.questions_analyzed}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Off-Script Interactions:</span>
+                              <span className="font-medium">{qualityMetrics.details.off_script_interactions}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Metadata */}
+                    <div className="bg-gray-50 border rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 mb-2">Metrics Information</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-600">Computed At:</span>
+                          <div className="font-medium">{formatDate(qualityMetrics.computed_at)}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Version:</span>
+                          <div className="font-medium">{qualityMetrics.version}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Source:</span>
+                          <div className="font-medium capitalize">{qualityMetrics.source?.replace('_', ' ')}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

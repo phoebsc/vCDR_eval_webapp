@@ -1,0 +1,3 @@
+[submodule "external/vCDR"]
+	path = external/vCDR
+	url = https://github.com/Brain-Health-Registry/vCDR

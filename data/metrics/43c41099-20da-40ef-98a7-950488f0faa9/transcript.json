@@ -1,0 +1,62 @@
+[
+  {
+    "timestamp": "2026-02-02T21:58:47.059Z",
+    "speaker": "agent",
+    "content": "Great, thank you for letting me know. Let's go ahead and continue. Now I'm going to ask you a few questions, specifically how are two items alike. For example, how are a pencil and pen alike? They are both writing instruments. Here’s the first question: How are a turnip and a cauliflower alike?",
+    "order": 1
+  },
+  {
+    "timestamp": "2026-02-02T21:58:48.846Z",
+    "speaker": "participant",
+    "content": "They're both vegetables.",
+    "order": 2
+  },
+  {
+    "timestamp": "2026-02-02T21:58:58.065Z",
+    "speaker": "agent",
+    "content": "That's exactly right. They are both vegetables. Well done. Let's move on to the next one. How are a desk and a bookcase alike?",
+    "order": 3
+  },
+  {
+    "timestamp": "2026-02-02T21:58:59.911Z",
+    "speaker": "participant",
+    "content": "They're both pieces of furniture.",
+    "order": 4
+  },
+  {
+    "timestamp": "2026-02-02T21:59:14.942Z",
+    "speaker": "agent",
+    "content": "That's correct. They're both pieces of furniture. You're doing great. Now let's move on to the next set of questions. Next, I'm going to ask you about how two items are different. Here’s the first one: What is the difference between a lie and a mistake?",
+    "order": 5
+  },
+  {
+    "timestamp": "2026-02-02T21:59:16.626Z",
+    "speaker": "participant",
+    "content": "A lie is when you deliberately say something that isn't true, and a mistake is when you do something wrong without meaning to.",
+    "order": 6
+  },
+  {
+    "timestamp": "2026-02-02T21:59:28.520Z",
+    "speaker": "agent",
+    "content": "That's a great explanation. A lie is deliberate, and a mistake is unintentional. You’ve got it. Let’s go on to the next one. What is the difference between a river and a canal?",
+    "order": 7
+  },
+  {
+    "timestamp": "2026-02-02T21:59:29.560Z",
+    "speaker": "participant",
+    "content": "A river is natural, and a canal is man-made.",
+    "order": 8
+  },
+  {
+    "timestamp": "2026-02-02T21:59:43.606Z",
+    "speaker": "agent",
+    "content": "That's exactly right. A river is natural, and a canal is artificial or man-made. You're doing really well. Now, let's move on to the next part, which involves making calculations. How many nickels are in a dollar?",
+    "order": 9
+  },
+  {
+    "timestamp": "2026-02-02T21:59:45.127Z",
+    "speaker": "participant",
+    "content": "Twenty nickels.",
+    "order": 10
+  }
+]

@@ -4,7 +4,8 @@ import path from "path";
 import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { getSystemPrompt, getPromptConfig, getInterviewerPromptId, getSimulatedUserPromptId, generatePromptId } from "./lib/promptLoader.js";
-import { initializeDatabase, saveBenchmarkRun, getBenchmarkRuns, getBenchmarkRun } from "./server/lib/database.js";
+import { initializeDatabase, saveBenchmarkRun, getBenchmarkRuns, getBenchmarkRun, updateQualityMetrics } from "./server/lib/database.js";
+import { computeQualityMetrics } from "./server/lib/metricsService.js";
 import "dotenv/config";
 
 const app = express();
@@ -256,7 +257,9 @@ app.put("/api/benchmark-runs/:run_id", async (req, res) => {
     const completeRunData = {
       ...runData,
       interviewer_prompt_id: generatePromptId(interviewerPromptName),
-      simulated_user_prompt_id: generatePromptId(userPromptName)
+      simulated_user_prompt_id: generatePromptId(userPromptName),
+      interviewer_prompt_name: interviewerPromptName,
+      simulated_user_prompt_name: userPromptName
     };
 
     const savedRun = await saveBenchmarkRun(run_id, completeRunData);
@@ -296,6 +299,77 @@ app.get("/api/benchmark-runs", async (req, res) => {
   } catch (error) {
     console.error("Error retrieving benchmark runs:", error);
     res.status(500).json({ error: "Failed to retrieve benchmark runs" });
+  }
+});
+
+// POST /api/benchmark-runs/:run_id/metrics - Compute quality metrics for a run
+app.post("/api/benchmark-runs/:run_id/metrics", async (req, res) => {
+  try {
+    const { run_id } = req.params;
+    console.log(`[METRICS] Computing metrics for run: ${run_id}`);
+
+    // Get the full run data including conversation history
+    const run = await getBenchmarkRun(run_id);
+
+    if (!run.conversation_history || run.conversation_history.length === 0) {
+      return res.status(400).json({
+        error: "No conversation history found for this run"
+      });
+    }
+
+    // Compute quality metrics
+    const qualityMetrics = await computeQualityMetrics(
+      run_id,
+      run.conversation_history,
+      {
+        interviewer_prompt: run.interviewer_prompt_name,
+        user_prompt: run.simulated_user_prompt_name
+      }
+    );
+
+    // Save metrics to database
+    await updateQualityMetrics(run_id, qualityMetrics);
+
+    console.log(`[METRICS] ✅ Successfully computed and saved metrics for run: ${run_id}`);
+    res.json({
+      ok: true,
+      metrics: qualityMetrics,
+      message: "Quality metrics computed successfully"
+    });
+  } catch (error) {
+    console.error(`[METRICS] ❌ Error computing metrics for run ${req.params.run_id}:`, error);
+    res.status(500).json({
+      error: "Failed to compute quality metrics",
+      details: error.message
+    });
+  }
+});
+
+// GET /api/benchmark-runs/:run_id/metrics - Get quality metrics for a run
+app.get("/api/benchmark-runs/:run_id/metrics", async (req, res) => {
+  try {
+    const { run_id } = req.params;
+    const run = await getBenchmarkRun(run_id);
+
+    if (!run.quality_metrics) {
+      return res.status(404).json({
+        error: "No quality metrics found for this run",
+        computed: false
+      });
+    }
+
+    res.json({
+      ok: true,
+      computed: true,
+      metrics: run.quality_metrics
+    });
+  } catch (error) {
+    console.error(`Error retrieving metrics for run ${req.params.run_id}:`, error);
+    if (error.message.includes('not found')) {
+      res.status(404).json({ error: `Run not found: ${req.params.run_id}` });
+    } else {
+      res.status(500).json({ error: "Failed to retrieve quality metrics" });
+    }
   }
 });
 
