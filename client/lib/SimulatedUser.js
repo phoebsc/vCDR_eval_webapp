@@ -11,6 +11,7 @@ export class SimulatedUser {
     this.candidateConfig = null;
     this.systemPrompt = '';
     this.initialized = false;
+    this.selectedPromptName = 'candidate'; // Default
 
     this.conversationHistory = [];
     this.isActive = false;
@@ -19,14 +20,21 @@ export class SimulatedUser {
 
   /**
    * Initialize the simulated user by loading the candidate config from server
+   * @param {string} promptName - Name of the prompt to use (optional)
    */
-  async initialize() {
+  async initialize(promptName = null) {
+    // If a new prompt name is provided, reset initialization
+    if (promptName && promptName !== this.selectedPromptName) {
+      this.initialized = false;
+      this.selectedPromptName = promptName;
+    }
+
     if (this.initialized) {
       return;
     }
 
     try {
-      const response = await fetch('/api/prompts/candidate');
+      const response = await fetch(`/api/prompts/${this.selectedPromptName}`);
       if (!response.ok) {
         throw new Error(`Failed to load candidate config: ${response.status}`);
       }
@@ -261,7 +269,7 @@ Keep responses conversational and realistic but very short. Please respond only 
         content = event.transcript;
       } 
 
-      if (content.toLowerCase().includes('this part of the interview')) {
+      if (content.toLowerCase().includes('that completes the interview')) {
         return true;
       }
     }

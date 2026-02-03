@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Play, Square, RotateCcw, Settings } from "react-feather";
+import { useState, useEffect } from "react";
+import { Play, Square, RotateCcw, Settings, FileText } from "react-feather";
 import Button from "./Button";
 
 function TranscriptView({ transcript }) {
@@ -102,12 +102,43 @@ export default function BenchmarkPanel({
   benchmarkTranscript,
   benchmarkLog,
   simulatedUserPrompt,
+  selectedInterviewerPrompt,
+  selectedUserPrompt,
+  onInterviewerPromptChange,
+  onUserPromptChange,
   onStartBenchmark,
   onEndBenchmark,
   onResetBenchmark,
   onToggleMode
 }) {
   const [activeTab, setActiveTab] = useState('transcript');
+  const [availablePrompts, setAvailablePrompts] = useState([]);
+  const [promptsLoading, setPromptsLoading] = useState(true);
+
+  // Load available prompts on component mount
+  useEffect(() => {
+    fetchAvailablePrompts();
+  }, []);
+
+  const fetchAvailablePrompts = async () => {
+    try {
+      setPromptsLoading(true);
+      const response = await fetch('/api/prompts');
+      if (response.ok) {
+        const prompts = await response.json();
+        setAvailablePrompts(prompts);
+      }
+    } catch (error) {
+      console.error('Failed to load available prompts:', error);
+    } finally {
+      setPromptsLoading(false);
+    }
+  };
+
+  const handleStartBenchmark = () => {
+    // Pass selected prompts to the parent component
+    onStartBenchmark(selectedInterviewerPrompt, selectedUserPrompt);
+  };
 
   return (
     <section className="h-full w-full flex flex-col gap-4">
@@ -123,10 +154,61 @@ export default function BenchmarkPanel({
         </Button>
       </div>
 
+      {/* Prompt Selection */}
+      <div className="bg-gray-50 rounded-md p-4 space-y-4">
+        <h3 className="text-sm font-semibold text-gray-700">Prompt Selection</h3>
+
+        {/* Interviewer Prompt */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-2">
+            Voice Bot (Interviewer)
+          </label>
+          <select
+            value={selectedInterviewerPrompt}
+            onChange={(e) => onInterviewerPromptChange(e.target.value)}
+            disabled={isBenchmarkActive || promptsLoading}
+            className="w-full text-sm border border-gray-300 rounded px-3 py-2 bg-white disabled:bg-gray-100"
+          >
+            {promptsLoading ? (
+              <option>Loading prompts...</option>
+            ) : (
+              availablePrompts.map((prompt) => (
+                <option key={prompt.name} value={prompt.name}>
+                  {prompt.filename}
+                </option>
+              ))
+            )}
+          </select>
+        </div>
+
+        {/* Simulated User Prompt */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-2">
+            Simulated User
+          </label>
+          <select
+            value={selectedUserPrompt}
+            onChange={(e) => onUserPromptChange(e.target.value)}
+            disabled={isBenchmarkActive || promptsLoading}
+            className="w-full text-sm border border-gray-300 rounded px-3 py-2 bg-white disabled:bg-gray-100"
+          >
+            {promptsLoading ? (
+              <option>Loading prompts...</option>
+            ) : (
+              availablePrompts.map((prompt) => (
+                <option key={prompt.name} value={prompt.name}>
+                  {prompt.filename}
+                </option>
+              ))
+            )}
+          </select>
+        </div>
+      </div>
+
       {/* Control Buttons */}
       <div className="flex gap-2">
         <Button
-          onClick={onStartBenchmark}
+          onClick={handleStartBenchmark}
           disabled={!isSessionActive || isBenchmarkActive}
           icon={<Play height={16} />}
           className={`flex-1 ${
@@ -155,6 +237,17 @@ export default function BenchmarkPanel({
           className="bg-orange-600"
         >
           Reset
+        </Button>
+      </div>
+
+      {/* View Results Button */}
+      <div className="flex">
+        <Button
+          onClick={() => window.location.href = '/results'}
+          icon={<FileText height={16} />}
+          className="bg-blue-600 w-full"
+        >
+          View Results
         </Button>
       </div>
 
