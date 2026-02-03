@@ -13,7 +13,11 @@
       "Bash(powershell \"Stop-Process -Id 31964 -Force\")",
       "Bash(sqlite3:*)",
       "Bash(timeout 10s npm start)",
-      "Bash(timeout 5s npm start)"
+      "Bash(timeout 5s npm start)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []

@@ -373,6 +373,50 @@ app.get("/api/benchmark-runs/:run_id/metrics", async (req, res) => {
   }
 });
 
+// TEST endpoint for vCDR integration (remove in production)
+app.post("/api/test-vcdr-integration", async (req, res) => {
+  try {
+    console.log(`[TEST] Testing vCDR integration...`);
+
+    // Create sample conversation data
+    const sampleConversation = [
+      { speaker: 'interviewer', content: 'Hello, can you tell me your name?', timestamp: '2024-01-01T10:00:00Z' },
+      { speaker: 'simulated_user', content: 'My name is John Smith.', timestamp: '2024-01-01T10:00:05Z' },
+      { speaker: 'interviewer', content: 'How are you feeling today?', timestamp: '2024-01-01T10:00:10Z' },
+      { speaker: 'simulated_user', content: 'I am feeling well, thank you for asking.', timestamp: '2024-01-01T10:00:15Z' },
+      { speaker: 'interviewer', content: 'Can you tell me about your memory?', timestamp: '2024-01-01T10:00:20Z' },
+      { speaker: 'simulated_user', content: 'My memory is generally good. I can remember most things from recent days and years past.', timestamp: '2024-01-01T10:00:25Z' }
+    ];
+
+    const testRunId = `test_${Date.now()}`;
+
+    // Test the quality metrics computation
+    const qualityMetrics = await computeQualityMetrics(
+      testRunId,
+      sampleConversation,
+      { test_mode: true }
+    );
+
+    console.log(`[TEST] ✅ vCDR integration test successful`);
+    res.json({
+      ok: true,
+      test_run_id: testRunId,
+      sample_conversation: sampleConversation,
+      metrics: qualityMetrics,
+      message: "vCDR integration test completed successfully"
+    });
+
+  } catch (error) {
+    console.error(`[TEST] ❌ vCDR integration test failed:`, error);
+    res.status(500).json({
+      ok: false,
+      error: "vCDR integration test failed",
+      details: error.message,
+      message: "Check server logs for detailed error information"
+    });
+  }
+});
+
 // Render the React client
 app.use("*", async (req, res, next) => {
   const url = req.originalUrl;
