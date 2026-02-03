@@ -102,6 +102,10 @@ export default function BenchmarkPanel({
   benchmarkTranscript,
   benchmarkLog,
   simulatedUserPrompt,
+  selectedInterviewerPrompt,
+  selectedUserPrompt,
+  onInterviewerPromptChange,
+  onUserPromptChange,
   onStartBenchmark,
   onEndBenchmark,
   onResetBenchmark,
@@ -109,8 +113,6 @@ export default function BenchmarkPanel({
 }) {
   const [activeTab, setActiveTab] = useState('transcript');
   const [availablePrompts, setAvailablePrompts] = useState([]);
-  const [selectedInterviewerPrompt, setSelectedInterviewerPrompt] = useState('interviewer');
-  const [selectedUserPrompt, setSelectedUserPrompt] = useState('candidate');
   const [promptsLoading, setPromptsLoading] = useState(true);
 
   // Load available prompts on component mount
@@ -163,7 +165,7 @@ export default function BenchmarkPanel({
           </label>
           <select
             value={selectedInterviewerPrompt}
-            onChange={(e) => setSelectedInterviewerPrompt(e.target.value)}
+            onChange={(e) => onInterviewerPromptChange(e.target.value)}
             disabled={isBenchmarkActive || promptsLoading}
             className="w-full text-sm border border-gray-300 rounded px-3 py-2 bg-white disabled:bg-gray-100"
           >
@@ -186,7 +188,7 @@ export default function BenchmarkPanel({
           </label>
           <select
             value={selectedUserPrompt}
-            onChange={(e) => setSelectedUserPrompt(e.target.value)}
+            onChange={(e) => onUserPromptChange(e.target.value)}
             disabled={isBenchmarkActive || promptsLoading}
             className="w-full text-sm border border-gray-300 rounded px-3 py-2 bg-white disabled:bg-gray-100"
           >

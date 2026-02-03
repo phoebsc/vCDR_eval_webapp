@@ -18,6 +18,10 @@ export default function App() {
   const [benchmarkLog, setBenchmarkLog] = useState([]);
   const benchmarkingService = useRef(null);
 
+  // Prompt selection state
+  const [selectedInterviewerPrompt, setSelectedInterviewerPrompt] = useState('interviewer');
+  const [selectedUserPrompt, setSelectedUserPrompt] = useState('candidate');
+
   // Initialize benchmarking service
   useEffect(() => {
     benchmarkingService.current = new BenchmarkingService();
@@ -27,14 +31,12 @@ export default function App() {
     benchmarkingService.current.onLogUpdate = setBenchmarkLog;
     benchmarkingService.current.onRunComplete = (runData) => {
       console.log('Benchmark run completed:', runData);
+      // Update UI state to exit benchmark mode (crucial for natural endings!)
+      setIsBenchmarkMode(false);
     };
   }, []);
 
   async function startSession() {
-    // Get a session token for OpenAI Realtime API
-    const tokenResponse = await fetch("/token");
-    const data = await tokenResponse.json();
-    const EPHEMERAL_KEY = data.value;
 
     // Create a peer connection
     const pc = new RTCPeerConnection();
@@ -76,14 +78,20 @@ export default function App() {
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
+    // Get a session token with dynamic prompt configuration
+    console.log('[CLIENT] Starting session with interviewer prompt:', selectedInterviewerPrompt);
+    const tokenResponse = await fetch(`/token?interviewerPrompt=${encodeURIComponent(selectedInterviewerPrompt)}`);
+    const data = await tokenResponse.json();
+    const EPHEMERAL_KEY = data.value;
+    console.log(`[APP] tokenResponse: ${selectedInterviewerPrompt}`)
     const baseUrl = "https://api.openai.com/v1/realtime/calls";
     const sdpResponse = await fetch(baseUrl, {
       method: "POST",
-      body: offer.sdp,
       headers: {
         Authorization: `Bearer ${EPHEMERAL_KEY}`,
         "Content-Type": "application/sdp",
       },
+      body: offer.sdp,
     });
 
   // ✅ Guard: ensure we actually got SDP back (not JSON/HTML error)
@@ -134,6 +142,11 @@ export default function App() {
     }
 
     console.log('[App] Starting benchmark with prompts:', { interviewerPrompt, userPrompt });
+
+    // Update app state with selected prompts
+    setSelectedInterviewerPrompt(interviewerPrompt);
+    setSelectedUserPrompt(userPrompt);
+
     setIsBenchmarkMode(true);
     setBenchmarkTranscript([]);
     setBenchmarkLog([]);
@@ -262,6 +275,10 @@ export default function App() {
               benchmarkTranscript={benchmarkTranscript}
               benchmarkLog={benchmarkLog}
               simulatedUserPrompt={benchmarkingService.current?.getSimulatedUserPrompt() || ''}
+              selectedInterviewerPrompt={selectedInterviewerPrompt}
+              selectedUserPrompt={selectedUserPrompt}
+              onInterviewerPromptChange={setSelectedInterviewerPrompt}
+              onUserPromptChange={setSelectedUserPrompt}
               onStartBenchmark={startBenchmarkRun}
               onEndBenchmark={endBenchmarkRun}
               onResetBenchmark={resetBenchmark}

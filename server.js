@@ -8,24 +8,32 @@ import { initializeDatabase, saveBenchmarkRun, getBenchmarkRuns, getBenchmarkRun
 import "dotenv/config";
 
 const app = express();
-app.use(express.text());
-app.use(express.json());
+
 const port = process.env.PORT || 3000;
 const apiKey = process.env.OPENAI_API_KEY;
 
 // Configure Vite middleware for React client
 const vite = await createViteServer({
-  server: { middlewareMode: true },
+  server: {
+    middlewareMode: true,
+    // Try to ensure Vite doesn't interfere with large payloads
+    maxPayloadSize: 50 * 1024 * 1024 // 50MB
+  },
   appType: "custom",
 });
 app.use(vite.middlewares);
+
+// Increase payload size limits AFTER Vite middleware to ensure precedence
+app.use(express.text({ limit: '50mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Voice Bot (Interviewer) Configuration
 const interviewerConfig = getPromptConfig('interviewer');
 const voiceBotSessionConfig = JSON.stringify({
   session: {
     type: "realtime",
-    model: "gpt-realtime",
+    model: "gpt-4o-realtime-preview",
     instructions: interviewerConfig.prompt,
     audio: {
       output: {
@@ -37,6 +45,27 @@ const voiceBotSessionConfig = JSON.stringify({
 
 // Keep original config for backward compatibility
 const sessionConfig = voiceBotSessionConfig;
+
+// New endpoint: Just return session config based on prompt selection
+app.post("/api/session-config", (req, res) => {
+  const interviewerPromptName = req.body.interviewerPrompt || 'interviewer';
+  const promptConfig = getPromptConfig(interviewerPromptName);
+
+  const dynamicSessionConfig = JSON.stringify({
+    session: {
+      type: "realtime",
+      model: "gpt-realtime",
+      instructions: promptConfig.prompt,
+      audio: {
+        output: {
+          voice: "marin",
+        },
+      },
+    },
+  });
+
+  res.send(dynamicSessionConfig);
+});
 
 // All-in-one SDP request (experimental)
 app.post("/session", async (req, res) => {
@@ -56,6 +85,7 @@ app.post("/session", async (req, res) => {
 
   // Build dynamic session configuration based on selected prompt
   const promptConfig = getPromptConfig(interviewerPromptName);
+  console.log('Prompt config loaded:', { interviewerPromptName, hasPrompt: !!promptConfig?.prompt });
   const dynamicSessionConfig = JSON.stringify({
     session: {
       type: "realtime",
@@ -72,6 +102,9 @@ app.post("/session", async (req, res) => {
   fd.set("sdp", sdpData);
   fd.set("session", dynamicSessionConfig);
 
+  console.log("Sending to OpenAI:");
+  console.log("Session config:", dynamicSessionConfig);
+
   const r = await fetch("https://api.openai.com/v1/realtime/calls", {
     method: "POST",
     headers: {
@@ -87,9 +120,37 @@ app.post("/session", async (req, res) => {
   res.send(sdp);
 });
 
-// API route for ephemeral token generation
+// API route for ephemeral token generation with dynamic prompt support
 app.get("/token", async (req, res) => {
   try {
+    // Get the interviewer prompt from query parameter, default to 'interviewer'
+    const interviewerPromptName = req.query.interviewerPrompt || 'interviewer';
+    console.log('[TOKEN] Requested prompt:', interviewerPromptName);
+
+    const promptConfig = getPromptConfig(interviewerPromptName);
+    console.log('[TOKEN] Prompt config loaded:', {
+      name: interviewerPromptName,
+      hasPrompt: !!promptConfig?.prompt,
+      promptStart: promptConfig?.prompt?.substring(0, 100) + '...'
+    });
+
+    // Build dynamic session configuration
+    const dynamicSessionConfig = JSON.stringify({
+      session: {
+        type: "realtime",
+        model: "gpt-realtime",
+        instructions: promptConfig.prompt,
+        audio: {
+          output: {
+            voice: "marin",
+          },
+        },
+      },
+    });
+
+    console.log('[TOKEN] Sending session config to OpenAI with instructions:',
+      promptConfig.prompt.substring(0, 200) + '...');
+
     const response = await fetch(
       "https://api.openai.com/v1/realtime/client_secrets",
       {
@@ -98,7 +159,7 @@ app.get("/token", async (req, res) => {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
-        body: sessionConfig,
+        body: dynamicSessionConfig,
       },
     );
 
@@ -172,13 +233,19 @@ app.post("/api/benchmark-runs", async (req, res) => {
 });
 
 // PUT /api/benchmark-runs/:run_id - Save completed run
-app.put("/api/benchmark-runs/:run_id", express.json(), async (req, res) => {
+app.put("/api/benchmark-runs/:run_id", async (req, res) => {
   try {
     const { run_id } = req.params;
     const runData = req.body;
 
+    console.log('[SAVE] 📥 Received run data for:', run_id);
+    console.log('[SAVE] 📊 Payload size:', JSON.stringify(runData).length, 'characters');
+    console.log('[SAVE] 💬 Events count:', runData.event_log?.length || 0);
+    console.log('[SAVE] 📝 Transcript length:', runData.conversation_history?.length || 0);
+
     // Validate required fields
     if (!runData.conversation_history || !runData.event_log) {
+      console.log('[SAVE] ❌ Missing required fields');
       return res.status(400).json({ error: "Missing required fields: conversation_history, event_log" });
     }
 
@@ -193,11 +260,12 @@ app.put("/api/benchmark-runs/:run_id", express.json(), async (req, res) => {
     };
 
     const savedRun = await saveBenchmarkRun(run_id, completeRunData);
-    console.log(`Saved benchmark run: ${run_id}`);
+    console.log(`[SAVE] ✅ Successfully saved benchmark run: ${run_id}`);
 
     res.json({ ok: true, run: savedRun });
   } catch (error) {
-    console.error("Error saving benchmark run:", error);
+    console.error("[SAVE] ❌ Error saving benchmark run:", error.message);
+    console.error("[SAVE] 🔍 Stack trace:", error.stack);
     res.status(500).json({ error: "Failed to save benchmark run" });
   }
 });

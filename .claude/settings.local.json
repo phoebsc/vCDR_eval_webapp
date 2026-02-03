@@ -3,7 +3,14 @@
     "allow": [
       "Bash(npm run dev)",
       "Bash(curl:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(cmd /c \"taskkill /PID 28804 /F\")",
+      "Bash(powershell \"Stop-Process -Id 28804 -Force\")",
+      "Bash(powershell \"Get-Process node | Stop-Process -Force\")",
+      "Bash(powershell \"Stop-Process -Id 29788 -Force\")",
+      "Bash(powershell \"Stop-Process -Id 31964 -Force\")"
     ],
     "deny": [],
     "ask": []

@@ -62,9 +62,10 @@ export class BenchmarkingService {
       throw error;
     }
 
-    // Start the simulated user
+    // Start the simulated user with the selected prompt
+    await this.simulatedUser.initialize(userPrompt);
     this.simulatedUser.start();
-    console.log('[BenchmarkingService] Started simulated user');
+    console.log('[BenchmarkingService] Started simulated user with prompt:', userPrompt);
 
     // Log run start
     this.logEvent('system', 'Benchmark run started', { runId: this.currentRun.id });
@@ -87,9 +88,15 @@ export class BenchmarkingService {
    * End the current benchmark run
    */
   async endRun() {
+    console.log('[BenchmarkingService] 🏁 endRun() called');
     if (!this.isRunning || !this.currentRun) {
+      console.log('[BenchmarkingService] ⏹️ No active run or not running - skipping');
       return;
     }
+
+    console.log('[BenchmarkingService] 📊 Ending run:', this.currentRun.id);
+    console.log('[BenchmarkingService] 💬 Final transcript length:', this.currentRun.transcript?.length || 0);
+    console.log('[BenchmarkingService] 📝 Final events count:', this.currentRun.events?.length || 0);
 
     this.isRunning = false;
     this.simulatedUser.stop();
@@ -112,10 +119,12 @@ export class BenchmarkingService {
       // Continue with completion callback even if save fails
     }
 
-    // Notify completion
+    // Notify completion - this should update UI state
     if (this.onRunComplete) {
       this.onRunComplete(this.currentRun);
     }
+
+    console.log('[BenchmarkingService] ✅ Run ending completed successfully');
   }
 
   /**
@@ -140,7 +149,15 @@ export class BenchmarkingService {
     if (this.simulatedUser.isConversationEnded(events)) {
       console.log('[BenchmarkingService] Conversation ended detected');
       this.logEvent('system', 'Termination cue detected', { cue: 'That completes the interview' });
-      setTimeout(async () => await this.endRun(), 1000);
+      console.log('[BenchmarkingService] 🔚 Natural ending detected - scheduling endRun()');
+
+      // Properly handle async endRun with error handling
+      setTimeout(() => {
+        console.log('[BenchmarkingService] 🚀 Executing natural endRun()');
+        this.endRun().catch(error => {
+          console.error('[BenchmarkingService] ❌ Error during natural run ending:', error);
+        });
+      }, 1000);
       return;
     }
 
