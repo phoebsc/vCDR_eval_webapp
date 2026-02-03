@@ -28,14 +28,14 @@ git clone --recurse-submodules https://github.com/your-repo/openai-realtime-cons
 
 ### 2. Update Submodules (Regular Maintenance)
 
-To update the vCDR submodule to the latest version:
+To update the vCDR submodule to the latest version of the scoring_edits branch:
 
 ```bash
 cd external/vCDR
-git pull origin main
+git pull origin scoring_edits
 cd ../..
 git add external/vCDR
-git commit -m "Update vCDR submodule to latest version"
+git commit -m "Update vCDR submodule to latest scoring_edits"
 ```
 
 ### 3. Python Environment Setup (Future)
