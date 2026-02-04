@@ -18,7 +18,11 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(chmod:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(git submodule:*)",
+      "Bash(python:*)",
+      "Bash(pip uninstall:*)",
+      "Bash(pip install:*)"
     ],
     "deny": [],
     "ask": []

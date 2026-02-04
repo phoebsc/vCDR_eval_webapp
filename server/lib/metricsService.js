@@ -49,8 +49,6 @@ function convertToTranscriptItems(conversationHistory) {
   }));
 }
 
-// Survey config creation removed - no longer needed for vCDR integration
-
 /**
  * Compute quality metrics for a benchmark run
  * @param {string} runId - The run identifier
@@ -60,9 +58,11 @@ function convertToTranscriptItems(conversationHistory) {
  */
 export async function computeQualityMetrics(runId, conversationHistory, options = {}) {
   try {
-    console.log(`[METRICS] 🚀 METRICSSERVICE LOADED - Version: ${new Date().toISOString()}`);
-    console.log(`[METRICS] 💾 Computing quality metrics for run: ${runId}`);
-    console.log(`[METRICS] 🎯 Options received:`, JSON.stringify(options));
+    console.log(`[METRICS] Computing quality metrics for run: ${runId}`);
+
+    // Always generate simple analysis first
+    const simpleAnalysis = await generateSimplifiedMetrics(conversationHistory);
+    console.log(`[METRICS] Generated simple analysis for run: ${runId}`);
 
     // Create working directory for this run
     const workspaceDir = path.join(__dirname, '..', '..', 'data', 'metrics', runId);
@@ -70,7 +70,6 @@ export async function computeQualityMetrics(runId, conversationHistory, options 
 
     // Convert conversation to vCDR transcript format (AGENT: xxx\nPARTICIPANT: xxx\n)
     const vCDRTranscriptString = convertToVCDRTranscriptFormat(conversationHistory);
-    console.log(`[METRICS] Created transcript format:\n${vCDRTranscriptString.substring(0, 200)}...`);
 
     // Save transcript to file for Python script
     const transcriptPath = path.join(workspaceDir, 'transcript.txt');
@@ -80,28 +79,42 @@ export async function computeQualityMetrics(runId, conversationHistory, options 
     const interviewerPrompt = options.interviewer_prompt || 'interviewer';
     console.log(`[METRICS] Using interviewer prompt: ${interviewerPrompt}`);
 
-    // Try to call the actual vCDR scoring system (NO FALLBACK - FAIL HARD)
-    console.log(`[METRICS] 🚨 FALLBACK DISABLED - vCDR will fail hard if there are issues`);
+    // Try to call the actual vCDR scoring system
     console.log(`[METRICS] Attempting to call vCDR Python scoring...`);
-    const vCDRResults = await callVCDRScoring(transcriptPath, runId, workspaceDir, interviewerPrompt);
-    console.log(`[METRICS] Successfully got vCDR results for run: ${runId}`);
-    return vCDRResults;
-    // } catch (pythonError) {
-    //   console.warn(`[METRICS] vCDR Python scoring failed, falling back to simplified metrics:`, pythonError.message);
 
-    //   // Fallback to simplified metrics if Python fails
-    //   const simplifiedMetrics = await generateSimplifiedMetrics(conversationHistory);
-    //   simplifiedMetrics.fallback_reason = pythonError.message;
-    //   simplifiedMetrics.source = "simplified_fallback";
+    try {
+      const vCDRResults = await callVCDRScoring(transcriptPath, runId, workspaceDir, interviewerPrompt);
+      console.log(`[METRICS] Successfully got vCDR results for run: ${runId}`);
 
-    //   return simplifiedMetrics;
-    // }
+      // Combine simple analysis with vCDR results
+      const combinedResults = {
+        computed_at: new Date().toISOString(),
+        run_id: runId,
+        simple_analysis: simpleAnalysis,
+        vcdr_analysis: vCDRResults,
+        has_vcdr_data: true
+      };
+
+      return combinedResults;
+
+    } catch (vCDRError) {
+      console.warn(`[METRICS] vCDR analysis failed, returning simple analysis only:`, vCDRError.message);
+
+      // Return simple analysis with error info
+      const fallbackResults = {
+        computed_at: new Date().toISOString(),
+        run_id: runId,
+        simple_analysis: simpleAnalysis,
+        vcdr_analysis: null,
+        vcdr_error: vCDRError.message,
+        has_vcdr_data: false
+      };
+
+      return fallbackResults;
+    }
 
   } catch (error) {
-    console.error('[METRICS] 💥 FATAL ERROR in computeQualityMetrics:', error);
-    console.error('[METRICS] 📋 Error stack:', error.stack);
-    console.error('[METRICS] 🔍 Error type:', typeof error);
-    console.error('[METRICS] 📊 Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    console.error('[METRICS] ERROR in computeQualityMetrics:', error);
     throw new Error(`Failed to compute quality metrics: ${error.message}`);
   }
 }
@@ -210,13 +223,53 @@ try:
     with open(r"${transcriptPath}", "r") as f:
         transcript_text = f.read().strip()
 
+    # Collect vCDR metadata
+    import subprocess
+    import voz_vcdr
+
+    metadata = {
+        "analysis_timestamp": datetime.now().isoformat(),
+        "python_version": sys.version,
+        "vcdr_source_path": str(vcdr_src),
+    }
+
+    # Get Git information from vCDR repository
+    try:
+        vcdr_repo_path = vcdr_src.parent
+        git_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'],
+                                           cwd=vcdr_repo_path,
+                                           stderr=subprocess.DEVNULL).decode().strip()
+        git_branch = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+                                           cwd=vcdr_repo_path,
+                                           stderr=subprocess.DEVNULL).decode().strip()
+        metadata.update({
+            "git_commit": git_commit,
+            "git_branch": git_branch,
+            "git_commit_short": git_commit[:8]
+        })
+    except Exception as e:
+        metadata.update({
+            "git_commit": "unknown",
+            "git_branch": "unknown",
+            "git_error": str(e)
+        })
+
+    # Get vCDR version if available
+    try:
+        if hasattr(voz_vcdr, '__version__'):
+            metadata["vcdr_version"] = voz_vcdr.__version__
+        else:
+            metadata["vcdr_version"] = "development"
+    except:
+        metadata["vcdr_version"] = "unknown"
+
     # Use the interviewer prompt for module ID mapping
     interviewer_prompt = "${interviewerPrompt}"
     conversation_id = "${runId}"
 
     print(f"[PYTHON] Processing transcript for interviewer prompt: {interviewer_prompt}")
     print(f"[PYTHON] Conversation ID: {conversation_id}")
-    print(f"[PYTHON] Transcript length: {len(transcript_text)} characters")
+    print(f"[PYTHON] vCDR Metadata: {metadata}")
 
     # Call the vCDR scoring function
     try:
@@ -226,14 +279,22 @@ try:
 
         # Convert result to dict if it's a Pydantic model
         if hasattr(result, 'model_dump'):
-            result_dict = result.model_dump()
+            vcdr_data = result.model_dump()
         elif hasattr(result, 'dict'):
-            result_dict = result.dict()
+            vcdr_data = result.dict()
         else:
-            result_dict = result
+            vcdr_data = result
+
+        # Structure the complete result with metadata and vCDR data
+        complete_result = {
+            "success": True,
+            "metadata": metadata,
+            "vcdr_results": vcdr_data,
+            "run_id": conversation_id
+        }
 
         print("VCDR_RESULT_START")
-        print(json.dumps(result_dict, indent=2, default=str))
+        print(json.dumps(complete_result, indent=2, default=str))
         print("VCDR_RESULT_END")
 
     except Exception as e:
@@ -261,8 +322,21 @@ except Exception as e:
 
     console.log(`[METRICS] Calling Python script: ${customScriptPath}`);
 
-    // Execute the custom Python script
-    const pythonProcess = spawn('python', [customScriptPath], {
+    // Use the vCDR virtual environment's Python executable
+    const vCDRVenvPython = process.platform === 'win32'
+      ? path.join(vCDRDir, '.venv', 'Scripts', 'python.exe')
+      : path.join(vCDRDir, '.venv', 'bin', 'python');
+
+    console.log(`[METRICS] Using vCDR virtual environment Python: ${vCDRVenvPython}`);
+
+    // Check if vCDR virtual environment exists
+    if (!fs.existsSync(vCDRVenvPython)) {
+      reject(new Error(`vCDR virtual environment not found at ${vCDRVenvPython}. Please run 'uv sync' in the vCDR directory: ${vCDRDir}`));
+      return;
+    }
+
+    // Execute the custom Python script with vCDR's virtual environment
+    const pythonProcess = spawn(vCDRVenvPython, [customScriptPath], {
       cwd: workspaceDir,
       env: {
         ...process.env,

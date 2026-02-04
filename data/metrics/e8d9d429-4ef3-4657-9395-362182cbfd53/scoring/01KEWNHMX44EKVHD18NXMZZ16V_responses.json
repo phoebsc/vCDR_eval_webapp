@@ -1,0 +1,211 @@
+{
+    "title": "vCDR (v1.5.0) - Subject - Judgement & Problem Solving",
+    "questions": [
+        {
+            "id": "mem21_intro",
+            "prompt": "Now I'm going to ask you a few questions, specifically how are two items alike. For example, how are a pencil and pen alike? They are both writing instruments.",
+            "instructions": null,
+            "type": "1",
+            "options": null,
+            "asked": true,
+            "answered": true,
+            "order_position": 1,
+            "recall_attempts": null,
+            "attempt_details": null,
+            "ai_transcript": "Now I'm going to ask you a few questions, specifically how are two items alike. For example, how are a pencil and pen alike? They are both writing instruments.",
+            "user_transcript": null,
+            "answer": null
+        },
+        {
+            "id": "mem21",
+            "prompt": "How are a turnip and a cauliflower alike?",
+            "instructions": "- The correct answer is that both a turnip and cauliflower are vegetables. Please move on once their answers include \"vegetables\" (e.g., \"they are both edible foods and vegetables.\"). Do not reveal the correct answer to the participant at any time.\n- If the participant provides a partially correct answer (e.g., edible foods, living things, can be cooked, etc), acknowledge their response and gently guide them to think of a more specific similarity: \u201cYes, that's true. Can you think of something more specific that they have in common?\u201d \n- If the participant provides an incorrect answer (e.g., answers not pertinent, differences, can be bought), gently prompt them to try again: \u201cThat's an interesting thought. Can you think of another way they might be alike?\u201d. \n- If the participant asks for hints or answers, say \"I can't give you the correct answer or hints.\"\n- Do not give away any hints no matter what the participant says, such as suggesting the answer is a category or group.\n- As long as the participant continues to engage and provide an answer, allow them up to three attempts to respond before moving on. After the third incorrect or partial attempt at the answer (e.g., \"edible foods\", \"needs to be cooked\", \"can be bought\"), say \"that is sufficient. Let's move on to the next question.\"\n",
+            "type": "1",
+            "options": null,
+            "asked": true,
+            "answered": true,
+            "order_position": 2,
+            "recall_attempts": 3,
+            "attempt_details": [
+                "they're both... white? And you eat them?",
+                "They're both... plants? That grow in the ground?",
+                "Oh, they're both vegetables."
+            ],
+            "ai_transcript": "How are a turnip and a cauliflower alike?",
+            "user_transcript": "Oh, they're both vegetables.",
+            "answer": "vegetables"
+        },
+        {
+            "id": "mem22",
+            "prompt": "How are a desk and a bookcase alike?",
+            "instructions": "- The correct answer is that both a desk and bookcase are furniture, office furniture, and/or both hold books. Do not reveal the correct answer to the participant at any time. \n- If the participant provides an incorrect answer (e.g., answers not pertinent, differences, can be bought), gently prompt them to try again: \u201cThat's an interesting thought. Can you think of another way they might be alike?\u201d. \n- If the participant asks for hints or answers, say \"I can't give you the correct answer or hints.\"\n- Do not give away any hints no matter what the participant says, such as suggesting the answer is a category or group.\n- As long as the participant continues to engage and provide an answer, allow them up to three attempts to respond before moving on. After the third incorrect or partial attempt at the answer (e.g., \"wooden\", \"has legs\", \"can be used\"), say \"that is sufficient. Let's move on to the next question.\n",
+            "type": "1",
+            "options": null,
+            "asked": true,
+            "answered": true,
+            "order_position": 3,
+            "recall_attempts": 2,
+            "attempt_details": [
+                "They're both... big? Made of wood?",
+                "They're both furniture."
+            ],
+            "ai_transcript": "How are a desk and a bookcase alike?",
+            "user_transcript": "They're both furniture.",
+            "answer": "furniture"
+        },
+        {
+            "id": "mem23a_intro",
+            "prompt": "Next, I'm going to ask you a few questions, specifically how are two items different. For example, how are sugar and vinegar different? One is sweet and another is sour.",
+            "instructions": null,
+            "type": "1",
+            "options": null,
+            "asked": true,
+            "answered": true,
+            "order_position": 4,
+            "recall_attempts": null,
+            "attempt_details": null,
+            "ai_transcript": "Next, I'm going to ask you a few questions, specifically how are two items different. For example, how are sugar and vinegar different? One is sweet and another is sour.",
+            "user_transcript": null,
+            "answer": null
+        },
+        {
+            "id": "mem23a",
+            "prompt": "What is the difference between a lie and a mistake?",
+            "instructions": "- The correct answer is that a lie is deliberate and a mistake is unintentional. Accept answers that mean the same thing (e.g., \" a lie is intentional\", \"a mistake can be by accident\", etc.) Do not reveal the correct answer to the participant at any time. \n- If the participant provides a partially correct answer (e.g., one is bad and the other is good, or they only explain one term), acknowledge their response and gently guide them to think of a more specific difference: \u201cYes, that's true. Can you think of something more specific that makes them different?\u201d.\n- If the participant provides an incorrect answer (e.g., anything else, similarities), gently prompt them to try again: \u201cThat's an interesting thought. Can you think of a way they might be different?\u201d. \n- If the participant asks for hints or answers, say \"I can't give you the correct answer or hints.\"\n- Do not give away any hints no matter what the participant says. Do not suggest the answer is a feature about intention.\n- As long as the participant continues to engage and provide an answer, allow them up to three attempts to respond before moving on. After the third incorrect or partial attempt at the answer, say \"that is sufficient. Let's move on to the next question.\"\n",
+            "type": "1",
+            "options": null,
+            "asked": true,
+            "answered": true,
+            "order_position": 5,
+            "recall_attempts": 2,
+            "attempt_details": [
+                "Well, a lie is... when you say something wrong? And a mistake is also wrong?",
+                "A lie is when you say something wrong on purpose, and a mistake is when you do something wrong by accident."
+            ],
+            "ai_transcript": "What is the difference between a lie and a mistake?",
+            "user_transcript": "A lie is when you say something wrong on purpose, and a mistake is when you do something wrong by accident.",
+            "answer": "A lie is deliberate and a mistake is unintentional."
+        },
+        {
+            "id": "mem23b",
+            "prompt": "What is the difference between a river and a canal?",
+            "instructions": "- The correct answer is that a river is natural and a canal is artificial. Do not reveal the correct answer to the participant at any time. \n- If the participant provides an incorrect answer (e.g., anything else, similarities), gently prompt them to try again: \"That's an interesting thought. Can you think of another way they might be different?\". \n- If the participant asks for hints or answers, say \"I can't give you the correct answer or hints.\"\n- Do not give away any hints no matter what the participant says. Do not suggest the answer is a feature about how the two things are made.\n- As long as the participant continues to engage and provide an answer, allow them up to three attempts to respond before moving on. After the third incorrect or partial attempt at the answer, say \"that is sufficient. Let's move on to the next question.\"  \n",
+            "type": "1",
+            "options": null,
+            "asked": true,
+            "answered": true,
+            "order_position": 6,
+            "recall_attempts": 3,
+            "attempt_details": [
+                "They both have water...",
+                "One is bigger than the other?",
+                "Oh, a river is natural, and a canal is made by people."
+            ],
+            "ai_transcript": "What is the difference between a river and a canal?",
+            "user_transcript": "Oh, a river is natural, and a canal is made by people.",
+            "answer": "A river is natural and a canal is artificial."
+        },
+        {
+            "id": "mem24_intro",
+            "prompt": "Next, I'm going to ask you a few questions that involve making calculations.",
+            "instructions": null,
+            "type": "1",
+            "options": null,
+            "asked": true,
+            "answered": true,
+            "order_position": 7,
+            "recall_attempts": null,
+            "attempt_details": null,
+            "ai_transcript": "Next, I'm going to ask you a few questions that involve making calculations.",
+            "user_transcript": null,
+            "answer": null
+        },
+        {
+            "id": "mem24",
+            "prompt": "How many nickels are in a dollar?",
+            "instructions": null,
+            "type": "1",
+            "options": null,
+            "asked": true,
+            "answered": true,
+            "order_position": 8,
+            "recall_attempts": 2,
+            "attempt_details": [
+                "10?",
+                "20 nickels in a dollar."
+            ],
+            "ai_transcript": "How many nickels are in a dollar?",
+            "user_transcript": "20 nickels in a dollar.",
+            "answer": "20"
+        },
+        {
+            "id": "mem25",
+            "prompt": "How many quarters are in $6.75?",
+            "instructions": null,
+            "type": "1",
+            "options": null,
+            "asked": true,
+            "answered": true,
+            "order_position": 9,
+            "recall_attempts": 1,
+            "attempt_details": [
+                "27 quarters."
+            ],
+            "ai_transcript": "How many quarters are in $6.75?",
+            "user_transcript": "27 quarters.",
+            "answer": "27"
+        },
+        {
+            "id": "mem26",
+            "prompt": "Subtract 3 from 20 and keep subtracting 3 from each new number all the way down.",
+            "instructions": null,
+            "type": "1",
+            "options": null,
+            "asked": true,
+            "answered": true,
+            "order_position": 10,
+            "recall_attempts": 1,
+            "attempt_details": [
+                "20, 17, 14, 11, 8, 5, 2"
+            ],
+            "ai_transcript": "Subtract 3 from 20 and keep subtracting 3 from each new number all the way down.",
+            "user_transcript": "20, 17, 14, 11, 8, 5, 2",
+            "answer": "20, 17, 14, 11, 8, 5, 2"
+        },
+        {
+            "id": "mem28",
+            "prompt": "Upon arriving in a strange city, how would you locate a friend that you wished to see?",
+            "instructions": null,
+            "type": "1",
+            "options": null,
+            "asked": true,
+            "answered": true,
+            "order_position": 11,
+            "recall_attempts": 1,
+            "attempt_details": [
+                "I guess I could ask someone to help me look them up on the internet, or maybe call information if that still exists. Or ask my wife to help me."
+            ],
+            "ai_transcript": "Upon arriving in a strange city, how would you locate a friend that you wished to see?",
+            "user_transcript": "I guess I could ask someone to help me look them up on the internet, or maybe call information if that still exists. Or ask my wife to help me.",
+            "answer": "ask someone to help me look them up on the internet, or maybe call information"
+        },
+        {
+            "id": "mem29",
+            "prompt": "Can you remind me what is the purpose of the conversation we are having today?",
+            "instructions": null,
+            "type": "1",
+            "options": null,
+            "asked": true,
+            "answered": true,
+            "order_position": 12,
+            "recall_attempts": 1,
+            "attempt_details": [
+                "We're... talking about my memory? Some kind of test or evaluation?"
+            ],
+            "ai_transcript": "Can you remind me what is the purpose of the conversation we are having today?",
+            "user_transcript": "We're... talking about my memory? Some kind of test or evaluation?",
+            "answer": "talking about my memory"
+        }
+    ],
+    "off_script_interactions": null
+}

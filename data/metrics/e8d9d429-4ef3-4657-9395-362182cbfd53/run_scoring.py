@@ -42,13 +42,53 @@ try:
     with open(r"C:\Users\hchen\Documents\GitHub\openai-realtime-console\data\metrics\e8d9d429-4ef3-4657-9395-362182cbfd53\transcript.txt", "r") as f:
         transcript_text = f.read().strip()
 
+    # Collect vCDR metadata
+    import subprocess
+    import voz_vcdr
+
+    metadata = {
+        "analysis_timestamp": datetime.now().isoformat(),
+        "python_version": sys.version,
+        "vcdr_source_path": str(vcdr_src),
+    }
+
+    # Get Git information from vCDR repository
+    try:
+        vcdr_repo_path = vcdr_src.parent
+        git_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'],
+                                           cwd=vcdr_repo_path,
+                                           stderr=subprocess.DEVNULL).decode().strip()
+        git_branch = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+                                           cwd=vcdr_repo_path,
+                                           stderr=subprocess.DEVNULL).decode().strip()
+        metadata.update({
+            "git_commit": git_commit,
+            "git_branch": git_branch,
+            "git_commit_short": git_commit[:8]
+        })
+    except Exception as e:
+        metadata.update({
+            "git_commit": "unknown",
+            "git_branch": "unknown",
+            "git_error": str(e)
+        })
+
+    # Get vCDR version if available
+    try:
+        if hasattr(voz_vcdr, '__version__'):
+            metadata["vcdr_version"] = voz_vcdr.__version__
+        else:
+            metadata["vcdr_version"] = "development"
+    except:
+        metadata["vcdr_version"] = "unknown"
+
     # Use the interviewer prompt for module ID mapping
     interviewer_prompt = "Subject - Judgement & Problem Solving"
     conversation_id = "e8d9d429-4ef3-4657-9395-362182cbfd53"
 
     print(f"[PYTHON] Processing transcript for interviewer prompt: {interviewer_prompt}")
     print(f"[PYTHON] Conversation ID: {conversation_id}")
-    print(f"[PYTHON] Transcript length: {len(transcript_text)} characters")
+    print(f"[PYTHON] vCDR Metadata: {metadata}")
 
     # Call the vCDR scoring function
     try:
@@ -58,14 +98,22 @@ try:
 
         # Convert result to dict if it's a Pydantic model
         if hasattr(result, 'model_dump'):
-            result_dict = result.model_dump()
+            vcdr_data = result.model_dump()
         elif hasattr(result, 'dict'):
-            result_dict = result.dict()
+            vcdr_data = result.dict()
         else:
-            result_dict = result
+            vcdr_data = result
+
+        # Structure the complete result with metadata and vCDR data
+        complete_result = {
+            "success": True,
+            "metadata": metadata,
+            "vcdr_results": vcdr_data,
+            "run_id": conversation_id
+        }
 
         print("VCDR_RESULT_START")
-        print(json.dumps(result_dict, indent=2, default=str))
+        print(json.dumps(complete_result, indent=2, default=str))
         print("VCDR_RESULT_END")
 
     except Exception as e:
