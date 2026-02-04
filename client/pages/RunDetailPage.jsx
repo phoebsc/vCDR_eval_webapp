@@ -94,13 +94,23 @@ export default function RunDetailPage({ runId }) {
 
   const computeQualityMetrics = async () => {
     try {
+      console.log(`[CLIENT] 🔄 Recompute button clicked for run: ${run.run_id}`);
+      console.log(`[CLIENT] 📅 Client timestamp: ${new Date().toISOString()}`);
       setMetricsComputing(true);
-      const response = await fetch(`/api/benchmark-runs/${run.run_id}/metrics`, {
+
+      const apiUrl = `/api/benchmark-runs/${run.run_id}/metrics`;
+      console.log(`[CLIENT] 🌐 Making POST request to: ${apiUrl}`);
+
+      const response = await fetch(apiUrl, {
         method: 'POST'
       });
 
+      console.log(`[CLIENT] 📊 Response status: ${response.status}`);
+
       if (response.ok) {
         const data = await response.json();
+        console.log(`[CLIENT] ✅ Received metrics data - source: ${data.metrics?.source}`);
+        console.log(`[CLIENT] 📋 Full response:`, data);
         setQualityMetrics(data.metrics);
       } else {
         const errorData = await response.json();

@@ -306,10 +306,12 @@ app.get("/api/benchmark-runs", async (req, res) => {
 app.post("/api/benchmark-runs/:run_id/metrics", async (req, res) => {
   try {
     const { run_id } = req.params;
-    console.log(`[METRICS] Computing metrics for run: ${run_id}`);
+    console.log(`[RECOMPUTE] 🔄 API ENDPOINT HIT - Computing metrics for run: ${run_id}`);
+    console.log(`[RECOMPUTE] 📅 Server timestamp: ${new Date().toISOString()}`);
 
     // Get the full run data including conversation history
     const run = await getBenchmarkRun(run_id);
+    console.log(`[RECOMPUTE] 📊 Retrieved run data - interviewer_prompt: ${run.interviewer_prompt_name}`);
 
     if (!run.conversation_history || run.conversation_history.length === 0) {
       return res.status(400).json({
@@ -317,15 +319,26 @@ app.post("/api/benchmark-runs/:run_id/metrics", async (req, res) => {
       });
     }
 
+    // Check if metrics already exist
+    if (run.quality_metrics) {
+      console.log(`[RECOMPUTE] ⚠️  Existing metrics found, will overwrite them`);
+      console.log(`[RECOMPUTE] 🗂️  Existing source: ${run.quality_metrics.source}`);
+    } else {
+      console.log(`[RECOMPUTE] ✨ No existing metrics found - first computation`);
+    }
+
     // Compute quality metrics
+    console.log(`[RECOMPUTE] 🎯 About to call computeQualityMetrics with interviewer_prompt: ${run.interviewer_prompt_name}`);
     const qualityMetrics = await computeQualityMetrics(
       run_id,
       run.conversation_history,
       {
         interviewer_prompt: run.interviewer_prompt_name,
-        user_prompt: run.simulated_user_prompt_name
+        user_prompt: run.simulated_user_prompt_name,
+        force_recompute: true
       }
     );
+    console.log(`[RECOMPUTE] ✅ computeQualityMetrics returned, source: ${qualityMetrics.source}`);
 
     // Save metrics to database
     await updateQualityMetrics(run_id, qualityMetrics);
@@ -378,6 +391,22 @@ app.post("/api/test-vcdr-integration", async (req, res) => {
   try {
     console.log(`[TEST] Testing vCDR integration...`);
 
+    // Get a real run from the database to use its actual interviewer prompt
+    const existingRuns = await getBenchmarkRuns();
+    if (existingRuns.length === 0) {
+      return res.status(400).json({
+        ok: false,
+        error: "No existing benchmark runs found in database",
+        message: "Please complete at least one benchmark run first to test vCDR integration"
+      });
+    }
+
+    // Get the most recent run to use as a template
+    const templateRunId = existingRuns[0].run_id;
+    const templateRun = await getBenchmarkRun(templateRunId);
+
+    console.log(`[TEST] Using template run ${templateRunId} with interviewer prompt: ${templateRun.interviewer_prompt_name}`);
+
     // Create sample conversation data
     const sampleConversation = [
       { speaker: 'interviewer', content: 'Hello, can you tell me your name?', timestamp: '2024-01-01T10:00:00Z' },
@@ -390,11 +419,15 @@ app.post("/api/test-vcdr-integration", async (req, res) => {
 
     const testRunId = `test_${Date.now()}`;
 
-    // Test the quality metrics computation
+    // Test the quality metrics computation using the REAL interviewer prompt from database
     const qualityMetrics = await computeQualityMetrics(
       testRunId,
       sampleConversation,
-      { test_mode: true }
+      {
+        test_mode: true,
+        interviewer_prompt: templateRun.interviewer_prompt_name, // Use REAL prompt from database
+        user_prompt: templateRun.simulated_user_prompt_name
+      }
     );
 
     console.log(`[TEST] ✅ vCDR integration test successful`);

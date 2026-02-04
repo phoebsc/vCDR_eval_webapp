@@ -142,6 +142,70 @@ GET /api/prompts                  // List available prompts
 **Prompt System**: `lib/promptLoader.js`
 **Client Logic**: `client/lib/BenchmarkingService.js`
 **UI Components**: `client/components/BenchmarkPanel.jsx`, results pages
+**Quality Metrics**: `server/lib/metricsService.js` (vCDR Python integration)
+
+## Quality Metrics System (Added)
+
+### Architecture Overview
+The quality metrics system integrates with the vCDR repository (scoring_edits branch) via git submodule to provide LLM-based conversation analysis.
+
+**Key Components:**
+- `server/lib/metricsService.js` - Core integration logic with vCDR Python scripts
+- `external/vCDR/` - Git submodule pointing to vCDR scoring_edits branch
+- Database extension with `quality_metrics_json`, `interviewer_prompt_name`, `simulated_user_prompt_name` columns
+- UI integration in RunDetailPage.jsx with Quality Metrics tab
+
+### Integration Flow
+```
+1. User clicks "Compute Quality Metrics" → Manual trigger only (cost control)
+2. Node.js converts conversation to "AGENT: xxx\nPARTICIPANT: xxx\n" format
+3. Dynamic Python script generated with vCDR imports and user's actual interviewer prompt
+4. Python calls extract_responses_benchmark(conversation_id, transcript, module_id)
+5. Results parsed from Python output and stored in database
+6. Future views load from database (no recomputation unless requested)
+```
+
+### Key Implementation Details
+
+**Windows Path Handling**: All Python script paths use raw strings `r"${path}"` to handle backslashes
+**Dynamic Prompt Selection**: Uses actual `interviewer_prompt_name` from database (stored when user selects prompt)
+**Fallback System**: Commented out for testing - can be re-enabled for production resilience
+**Error Handling**: Comprehensive logging with `[METRICS]`, `[RECOMPUTE]`, `[PYTHON]` tags for debugging
+
+### Database Schema Extensions
+```sql
+-- Added columns for prompt names and quality metrics storage
+ALTER TABLE benchmark_runs ADD COLUMN interviewer_prompt_name TEXT;
+ALTER TABLE benchmark_runs ADD COLUMN simulated_user_prompt_name TEXT;
+ALTER TABLE benchmark_runs ADD COLUMN quality_metrics_json TEXT;
+```
+
+### API Endpoints Added
+```javascript
+POST /api/benchmark-runs/:run_id/metrics  // Compute quality metrics
+GET  /api/benchmark-runs/:run_id/metrics   // Retrieve quality metrics
+POST /api/test-vcdr-integration           // Test endpoint (uses real DB prompts)
+```
+
+### Critical Files Modified
+- `server/lib/metricsService.js` - Main vCDR integration logic
+- `server/lib/database.js` - Schema extensions and updateQualityMetrics()
+- `server.js` - New API endpoints with comprehensive logging
+- `client/pages/RunDetailPage.jsx` - Quality Metrics tab UI
+- `.gitmodules` - vCDR submodule configuration for scoring_edits branch
+
+### Python Integration Notes
+- Creates dynamic Python script per run with proper Windows path handling
+- Imports from `voz_vcdr.extract_responses.extract_responses_benchmark`
+- Maps interviewer prompt name to module ID via `moduleTitle2ID()` function
+- Returns structured JSON via `VCDR_RESULT_START/VCDR_RESULT_END` markers
+- Timeout protection (60 seconds) and comprehensive error logging
+
+### Testing & Debugging
+- Use test endpoint: `POST /api/test-vcdr-integration` (uses real prompts from DB)
+- Monitor both browser console (`[CLIENT]` logs) and terminal (`[METRICS]` logs)
+- Check `data/metrics/[run_id]/` for generated Python scripts and transcripts
+- Module loading logs: `[METRICSSERVICE] 🔄 Module loaded at: [timestamp]`
 
 ## Testing New Features
 

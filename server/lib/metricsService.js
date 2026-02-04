@@ -11,7 +11,13 @@ const __dirname = path.dirname(__filename);
  *
  * Interfaces with the vCDR Python scripts to compute quality metrics for benchmark runs.
  * Uses the git submodule at external/vCDR/ to access the scoring functionality.
+ *
+ * ⚠️ FALLBACK DISABLED - Will fail hard if vCDR fails (no simplified metrics fallback)
+ * 🕒 Module loaded at: ${new Date().toISOString()}
  */
+
+console.log(`[METRICSSERVICE] 🔄 Module loaded at: ${new Date().toISOString()}`);
+console.log(`[METRICSSERVICE] ⚠️  FALLBACK DISABLED - vCDR will fail hard if there are issues`);
 
 /**
  * Convert conversation history to vCDR transcript format
@@ -43,37 +49,7 @@ function convertToTranscriptItems(conversationHistory) {
   }));
 }
 
-/**
- * Create a minimal survey configuration for quality analysis
- * @param {string} runId - The run identifier
- * @returns {Object} Basic survey configuration
- */
-function createSurveyConfig(runId) {
-  return {
-    module_id: `benchmark_${runId}`,
-    title: "Benchmark Analysis",
-    questions: [
-      {
-        id: "conversation_quality",
-        prompt: "Overall conversation quality assessment",
-        type: "analysis",
-        instructions: "Analyze the overall quality of the conversation"
-      },
-      {
-        id: "participant_engagement",
-        prompt: "Participant engagement level",
-        type: "analysis",
-        instructions: "Assess how engaged the participant was"
-      },
-      {
-        id: "interviewer_performance",
-        prompt: "Interviewer performance evaluation",
-        type: "analysis",
-        instructions: "Evaluate how well the interviewer conducted the session"
-      }
-    ]
-  };
-}
+// Survey config creation removed - no longer needed for vCDR integration
 
 /**
  * Compute quality metrics for a benchmark run
@@ -84,7 +60,9 @@ function createSurveyConfig(runId) {
  */
 export async function computeQualityMetrics(runId, conversationHistory, options = {}) {
   try {
-    console.log(`[METRICS] Computing quality metrics for run: ${runId}`);
+    console.log(`[METRICS] 🚀 METRICSSERVICE LOADED - Version: ${new Date().toISOString()}`);
+    console.log(`[METRICS] 💾 Computing quality metrics for run: ${runId}`);
+    console.log(`[METRICS] 🎯 Options received:`, JSON.stringify(options));
 
     // Create working directory for this run
     const workspaceDir = path.join(__dirname, '..', '..', 'data', 'metrics', runId);
@@ -98,30 +76,32 @@ export async function computeQualityMetrics(runId, conversationHistory, options 
     const transcriptPath = path.join(workspaceDir, 'transcript.txt');
     fs.writeFileSync(transcriptPath, vCDRTranscriptString);
 
-    // Create survey config (simplified for now)
-    const surveyConfig = createSurveyConfig(runId);
-    const surveyPath = path.join(workspaceDir, 'survey.json');
-    fs.writeFileSync(surveyPath, JSON.stringify(surveyConfig, null, 2));
+    // Get interviewer prompt name for vCDR scoring
+    const interviewerPrompt = options.interviewer_prompt || 'interviewer';
+    console.log(`[METRICS] Using interviewer prompt: ${interviewerPrompt}`);
 
-    // Try to call the actual vCDR scoring system
-    try {
-      console.log(`[METRICS] Attempting to call vCDR Python scoring...`);
-      const vCDRResults = await callVCDRScoring(transcriptPath, surveyPath, runId, workspaceDir);
-      console.log(`[METRICS] Successfully got vCDR results for run: ${runId}`);
-      return vCDRResults;
-    } catch (pythonError) {
-      console.warn(`[METRICS] vCDR Python scoring failed, falling back to simplified metrics:`, pythonError.message);
+    // Try to call the actual vCDR scoring system (NO FALLBACK - FAIL HARD)
+    console.log(`[METRICS] 🚨 FALLBACK DISABLED - vCDR will fail hard if there are issues`);
+    console.log(`[METRICS] Attempting to call vCDR Python scoring...`);
+    const vCDRResults = await callVCDRScoring(transcriptPath, runId, workspaceDir, interviewerPrompt);
+    console.log(`[METRICS] Successfully got vCDR results for run: ${runId}`);
+    return vCDRResults;
+    // } catch (pythonError) {
+    //   console.warn(`[METRICS] vCDR Python scoring failed, falling back to simplified metrics:`, pythonError.message);
 
-      // Fallback to simplified metrics if Python fails
-      const simplifiedMetrics = await generateSimplifiedMetrics(conversationHistory);
-      simplifiedMetrics.fallback_reason = pythonError.message;
-      simplifiedMetrics.source = "simplified_fallback";
+    //   // Fallback to simplified metrics if Python fails
+    //   const simplifiedMetrics = await generateSimplifiedMetrics(conversationHistory);
+    //   simplifiedMetrics.fallback_reason = pythonError.message;
+    //   simplifiedMetrics.source = "simplified_fallback";
 
-      return simplifiedMetrics;
-    }
+    //   return simplifiedMetrics;
+    // }
 
   } catch (error) {
-    console.error('[METRICS] Error computing quality metrics:', error);
+    console.error('[METRICS] 💥 FATAL ERROR in computeQualityMetrics:', error);
+    console.error('[METRICS] 📋 Error stack:', error.stack);
+    console.error('[METRICS] 🔍 Error type:', typeof error);
+    console.error('[METRICS] 📊 Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     throw new Error(`Failed to compute quality metrics: ${error.message}`);
   }
 }
@@ -167,17 +147,7 @@ async function generateSimplifiedMetrics(conversationHistory) {
         avg_response_length: Math.round(avgResponseLength),
         response_rate: participantTurns / Math.max(interviewerTurns, 1),
         engagement_score: Math.min(100, Math.round(avgResponseLength / 50 * 100)) // Simple heuristic
-      },
-      conversation_quality: {
-        completeness_score: Math.min(100, Math.round(totalTurns / 10 * 100)), // Simple heuristic
-        flow_score: 85, // Placeholder
-        naturalness_score: 78 // Placeholder
       }
-    },
-    details: {
-      questions_analyzed: 3,
-      off_script_interactions: 0, // Placeholder
-      technical_issues: 0 // Placeholder
     }
   };
 }
@@ -185,12 +155,12 @@ async function generateSimplifiedMetrics(conversationHistory) {
 /**
  * Call the vCDR Python scoring system
  * @param {string} transcriptPath - Path to transcript file
- * @param {string} surveyPath - Path to survey config
  * @param {string} runId - The run identifier
  * @param {string} workspaceDir - Working directory for this run
+ * @param {string} interviewerPrompt - Name of the interviewer prompt
  * @returns {Promise<Object>} vCDR scoring results
  */
-async function callVCDRScoring(transcriptPath, surveyPath, runId, workspaceDir) {
+async function callVCDRScoring(transcriptPath, runId, workspaceDir, interviewerPrompt) {
   return new Promise((resolve, reject) => {
     const vCDRDir = path.join(__dirname, '..', '..', 'external', 'vCDR');
 
@@ -204,74 +174,66 @@ from pathlib import Path
 from datetime import datetime
 
 # Add vCDR to Python path
-vcdr_src = Path("${vCDRDir}") / "src"
+# Use raw string to handle Windows backslashes properly
+vcdr_src = Path(r"${vCDRDir}") / "src"
 sys.path.insert(0, str(vcdr_src))
 
 try:
-    from voz_vcdr.processors.individual_scoring import encode_response
+    from voz_vcdr.extract_responses import extract_responses_benchmark
     from voz_vcdr.models import SurveyResponse
-
-    # Read the transcript
-    with open("${transcriptPath}", "r") as f:
-        transcript_text = f.read().strip()
-
-    # Read the survey config
-    with open("${surveyPath}", "r") as f:
-        survey_config = json.load(f)
-
-    # Convert transcript text to format expected by vCDR
-    # The transcript is in format "AGENT: text\\nPARTICIPANT: text\\n"
-    transcript_lines = [line.strip() for line in transcript_text.split('\\n') if line.strip()]
-
-    # Create transcript items for vCDR
-    transcript_items = []
-    for i, line in enumerate(transcript_lines):
-        if ':' in line:
-            speaker, text = line.split(':', 1)
-            transcript_items.append({
-                "speaker": speaker.strip(),
-                "text": text.strip(),
-                "timestamp": f"2024-01-01T00:{i:02d}:00",
-                "order": i + 1
-            })
-
-    # For now, create a simple survey JSON for the scoring
-    simple_survey = {
-        "module_id": "${runId}",
-        "title": "Benchmark Analysis",
-        "questions": [
-            {
-                "id": "overall_quality",
-                "prompt": "Rate the overall conversation quality",
-                "type": "analysis"
-            }
-        ]
-    }
-
-    print(f"[PYTHON] Processing {len(transcript_items)} transcript items")
-    print(f"[PYTHON] Survey config: {json.dumps(simple_survey, indent=2)}")
-
-    # Call the vCDR scoring function
-    # Note: This might need adjustment based on the actual function signature
-    try:
-        result = encode_response(
-            json.dumps(simple_survey, indent=2),
-            transcript_items
-        )
-
-        # Output the results as JSON
-        output = {
-            "success": True,
-            "computed_at": datetime.utcnow().isoformat() + "Z",
-            "version": "vCDR-1.0",
-            "source": "vcdr_python_scoring",
-            "run_id": "${runId}",
-            "transcript_items_processed": len(transcript_items),
-            "results": result.model_dump() if hasattr(result, 'model_dump') else result
+    from ulid import ULID
+    def moduleTitle2ID(title: str) -> str:
+        mapping = {
+            'Subject - Memory - Part 1': '01KEWNHMWCMHQZMW901TZY3V2W',
+            'Subject - Memory - Part 2': '01KEWNHMX47Z4D9FQ4HD15BAV4',
+            'Subject - Orientation': '01KEWNHMX47R4ZANXZB72XQZDX',
+            'Subject - Judgement & Problem Solving': '01KEWNHMX44EKVHD18NXMZZ16V',
+            'Partner - Memory - Part 1': '01KEWNHMX4SH8HEN1E4YTATQF2',
+            'Partner - Memory - Part 2': '01KEWNHMX417VK0YR2YEVX9B75',
+            'Partner - Orientation': '01KEWNHMX5R7Y0Z86K4XBNR1YW',
+            'Partner - Judgement & Problem Solving': '01KEWNHMX5BJK9H4XRD9KNF29W',
+            'Partner - Community Affairs': '01KEWNHMX56WKPKG1CDPESEQVQ',
+            'Partner - Home & Hobbies': '01KEWNHMX5JD91W5R3DSWEH8X4',
+            'Partner - Personal Care': '01KEWNHMX5A9EEHF9TTXBP98V3',
         }
 
+        matches = [v for k, v in mapping.items() if k in title]
+
+        if len(matches) != 1:
+            raise ValueError(
+                f"Expected exactly one match for title '{title}', found {len(matches)}"
+            )
+
+        return matches[0]
+    # Read the transcript
+    # Use raw string to handle Windows backslashes properly
+    with open(r"${transcriptPath}", "r") as f:
+        transcript_text = f.read().strip()
+
+    # Use the interviewer prompt for module ID mapping
+    interviewer_prompt = "${interviewerPrompt}"
+    conversation_id = "${runId}"
+
+    print(f"[PYTHON] Processing transcript for interviewer prompt: {interviewer_prompt}")
+    print(f"[PYTHON] Conversation ID: {conversation_id}")
+    print(f"[PYTHON] Transcript length: {len(transcript_text)} characters")
+
+    # Call the vCDR scoring function
+    try:
+        module_id_string = moduleTitle2ID(interviewer_prompt)
+        module_id = ULID.from_str(module_id_string)
+        result = extract_responses_benchmark(conversation_id, transcript_text, module_id)
+
+        # Convert result to dict if it's a Pydantic model
+        if hasattr(result, 'model_dump'):
+            result_dict = result.model_dump()
+        elif hasattr(result, 'dict'):
+            result_dict = result.dict()
+        else:
+            result_dict = result
+
         print("VCDR_RESULT_START")
-        print(json.dumps(output, indent=2))
+        print(json.dumps(result_dict, indent=2, default=str))
         print("VCDR_RESULT_END")
 
     except Exception as e:
