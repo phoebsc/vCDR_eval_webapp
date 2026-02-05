@@ -4,7 +4,8 @@ import path from "path";
 import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { getSystemPrompt, getPromptConfig, getInterviewerPromptId, getSimulatedUserPromptId, generatePromptId } from "./lib/promptLoader.js";
-import { initializeDatabase, saveBenchmarkRun, getBenchmarkRuns, getBenchmarkRun } from "./server/lib/database.js";
+import { initializeDatabase, saveBenchmarkRun, getBenchmarkRuns, getBenchmarkRun, updateQualityMetrics } from "./server/lib/database.js";
+import { computeQualityMetrics } from "./server/lib/metricsService.js";
 import "dotenv/config";
 
 const app = express();
@@ -33,11 +34,11 @@ const interviewerConfig = getPromptConfig('interviewer');
 const voiceBotSessionConfig = JSON.stringify({
   session: {
     type: "realtime",
-    model: "gpt-4o-realtime-preview",
+    model: "gpt-4o-realtime-2025-08-28",
     instructions: interviewerConfig.prompt,
     audio: {
       output: {
-        voice: "marin",
+        voice: "alloy",
       },
     },
   },
@@ -256,7 +257,9 @@ app.put("/api/benchmark-runs/:run_id", async (req, res) => {
     const completeRunData = {
       ...runData,
       interviewer_prompt_id: generatePromptId(interviewerPromptName),
-      simulated_user_prompt_id: generatePromptId(userPromptName)
+      simulated_user_prompt_id: generatePromptId(userPromptName),
+      interviewer_prompt_name: interviewerPromptName,
+      simulated_user_prompt_name: userPromptName
     };
 
     const savedRun = await saveBenchmarkRun(run_id, completeRunData);
@@ -296,6 +299,154 @@ app.get("/api/benchmark-runs", async (req, res) => {
   } catch (error) {
     console.error("Error retrieving benchmark runs:", error);
     res.status(500).json({ error: "Failed to retrieve benchmark runs" });
+  }
+});
+
+// POST /api/benchmark-runs/:run_id/metrics - Compute quality metrics for a run
+app.post("/api/benchmark-runs/:run_id/metrics", async (req, res) => {
+  try {
+    const { run_id } = req.params;
+    console.log(`[RECOMPUTE] 🔄 API ENDPOINT HIT - Computing metrics for run: ${run_id}`);
+    console.log(`[RECOMPUTE] 📅 Server timestamp: ${new Date().toISOString()}`);
+
+    // Get the full run data including conversation history
+    const run = await getBenchmarkRun(run_id);
+    console.log(`[RECOMPUTE] 📊 Retrieved run data - interviewer_prompt: ${run.interviewer_prompt_name}`);
+
+    if (!run.conversation_history || run.conversation_history.length === 0) {
+      return res.status(400).json({
+        error: "No conversation history found for this run"
+      });
+    }
+
+    // Check if metrics already exist
+    if (run.quality_metrics) {
+      console.log(`[RECOMPUTE] ⚠️  Existing metrics found, will overwrite them`);
+      console.log(`[RECOMPUTE] 🗂️  Existing source: ${run.quality_metrics.source}`);
+    } else {
+      console.log(`[RECOMPUTE] ✨ No existing metrics found - first computation`);
+    }
+
+    // Compute quality metrics
+    console.log(`[RECOMPUTE] 🎯 About to call computeQualityMetrics with interviewer_prompt: ${run.interviewer_prompt_name}`);
+    const qualityMetrics = await computeQualityMetrics(
+      run_id,
+      run.conversation_history,
+      {
+        interviewer_prompt: run.interviewer_prompt_name,
+        user_prompt: run.simulated_user_prompt_name,
+        force_recompute: true
+      }
+    );
+    console.log(`[RECOMPUTE] ✅ computeQualityMetrics returned, source: ${qualityMetrics.source}`);
+
+    // Save metrics to database
+    await updateQualityMetrics(run_id, qualityMetrics);
+
+    console.log(`[METRICS] ✅ Successfully computed and saved metrics for run: ${run_id}`);
+    res.json({
+      ok: true,
+      metrics: qualityMetrics,
+      message: "Quality metrics computed successfully"
+    });
+  } catch (error) {
+    console.error(`[METRICS] ❌ Error computing metrics for run ${req.params.run_id}:`, error);
+    res.status(500).json({
+      error: "Failed to compute quality metrics",
+      details: error.message
+    });
+  }
+});
+
+// GET /api/benchmark-runs/:run_id/metrics - Get quality metrics for a run
+app.get("/api/benchmark-runs/:run_id/metrics", async (req, res) => {
+  try {
+    const { run_id } = req.params;
+    const run = await getBenchmarkRun(run_id);
+
+    if (!run.quality_metrics) {
+      return res.status(404).json({
+        error: "No quality metrics found for this run",
+        computed: false
+      });
+    }
+
+    res.json({
+      ok: true,
+      computed: true,
+      metrics: run.quality_metrics
+    });
+  } catch (error) {
+    console.error(`Error retrieving metrics for run ${req.params.run_id}:`, error);
+    if (error.message.includes('not found')) {
+      res.status(404).json({ error: `Run not found: ${req.params.run_id}` });
+    } else {
+      res.status(500).json({ error: "Failed to retrieve quality metrics" });
+    }
+  }
+});
+
+// TEST endpoint for vCDR integration (remove in production)
+app.post("/api/test-vcdr-integration", async (req, res) => {
+  try {
+    console.log(`[TEST] Testing vCDR integration...`);
+
+    // Get a real run from the database to use its actual interviewer prompt
+    const existingRuns = await getBenchmarkRuns();
+    if (existingRuns.length === 0) {
+      return res.status(400).json({
+        ok: false,
+        error: "No existing benchmark runs found in database",
+        message: "Please complete at least one benchmark run first to test vCDR integration"
+      });
+    }
+
+    // Get the most recent run to use as a template
+    const templateRunId = existingRuns[0].run_id;
+    const templateRun = await getBenchmarkRun(templateRunId);
+
+    console.log(`[TEST] Using template run ${templateRunId} with interviewer prompt: ${templateRun.interviewer_prompt_name}`);
+
+    // Create sample conversation data
+    const sampleConversation = [
+      { speaker: 'interviewer', content: 'Hello, can you tell me your name?', timestamp: '2024-01-01T10:00:00Z' },
+      { speaker: 'simulated_user', content: 'My name is John Smith.', timestamp: '2024-01-01T10:00:05Z' },
+      { speaker: 'interviewer', content: 'How are you feeling today?', timestamp: '2024-01-01T10:00:10Z' },
+      { speaker: 'simulated_user', content: 'I am feeling well, thank you for asking.', timestamp: '2024-01-01T10:00:15Z' },
+      { speaker: 'interviewer', content: 'Can you tell me about your memory?', timestamp: '2024-01-01T10:00:20Z' },
+      { speaker: 'simulated_user', content: 'My memory is generally good. I can remember most things from recent days and years past.', timestamp: '2024-01-01T10:00:25Z' }
+    ];
+
+    const testRunId = `test_${Date.now()}`;
+
+    // Test the quality metrics computation using the REAL interviewer prompt from database
+    const qualityMetrics = await computeQualityMetrics(
+      testRunId,
+      sampleConversation,
+      {
+        test_mode: true,
+        interviewer_prompt: templateRun.interviewer_prompt_name, // Use REAL prompt from database
+        user_prompt: templateRun.simulated_user_prompt_name
+      }
+    );
+
+    console.log(`[TEST] ✅ vCDR integration test successful`);
+    res.json({
+      ok: true,
+      test_run_id: testRunId,
+      sample_conversation: sampleConversation,
+      metrics: qualityMetrics,
+      message: "vCDR integration test completed successfully"
+    });
+
+  } catch (error) {
+    console.error(`[TEST] ❌ vCDR integration test failed:`, error);
+    res.status(500).json({
+      ok: false,
+      error: "vCDR integration test failed",
+      details: error.message,
+      message: "Check server logs for detailed error information"
+    });
   }
 });
 

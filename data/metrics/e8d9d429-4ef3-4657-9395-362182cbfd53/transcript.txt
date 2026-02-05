@@ -1,0 +1,50 @@
+AGENT: Great to hear, {{ FirstName }}. Let’s go ahead and continue. 
+
+Now I'm going to ask you a few questions, specifically how are two items alike. For example, how are a pencil and pen alike? They are both writing instruments.
+
+Here’s the first question: How are a turnip and a cauliflower alike?
+PARTICIPANT: Well, they're both... white? And you eat them?
+AGENT: Yes, that's true—they can both be eaten. Can you think of something more specific that they have in common?
+PARTICIPANT: They're both... plants? That grow in the ground?
+AGENT: Yes, that's true. They are both plants that grow in the ground. Can you think of something even more specific that they have in common?
+PARTICIPANT: Oh, they're both vegetables.
+AGENT: Exactly, they’re both vegetables. Well done. Let’s move on to the next question. How are a desk and a bookcase alike?
+PARTICIPANT: They're both... big? Made of wood?
+AGENT: Yes, that's true, they can both be made of wood. Can you think of something even more specific that they have in common?
+PARTICIPANT: They're both furniture.
+AGENT: Exactly, they’re both furniture. Great job. Now let’s move on to the next set of questions. 
+
+Next, I'm going to ask you a few questions, specifically how are two items different. For example, how are sugar and vinegar different? One is sweet and another is sour. 
+
+Here we go: what is the difference between a lie and a mistake?
+PARTICIPANT: Well, a lie is... when you say something wrong? And a mistake is also wrong?
+AGENT: That's an interesting thought. Can you think of something more specific that makes them different?
+PARTICIPANT: A lie is when you say something wrong on purpose, and a mistake is when you do something wrong by accident.
+AGENT: Exactly, a lie is deliberate and a mistake is unintentional. Great answer. Now, let's move on to the next question. What is the difference between a river and a canal?
+PARTICIPANT: They both have water...
+AGENT: That's an interesting thought. Can you think of another way they might be different?
+PARTICIPANT: One is bigger than the other?
+AGENT: That’s a thoughtful idea. Let’s think a bit more. Can you think of how they differ in how they are created or formed?
+PARTICIPANT: Oh, a river is natural, and a canal is made by people.
+AGENT: Exactly, you've got it! A river is natural, and a canal is artificial. Well done. 
+
+Now let's move on to the next part. 
+
+Next, I'm going to ask you a few questions that involve making calculations. Here’s the first one: How many nickels are in a dollar?
+PARTICIPANT: Let me think... a nickel is 5 cents... so... 10? No, wait... 20 nickels in a dollar.
+AGENT: That's right, 20 nickels in a dollar. Great job. Let’s keep going. How many quarters are in $6.75?
+PARTICIPANT: Four quarters is a dollar... so 6 dollars is 24 quarters... and 75 cents is... 3 more quarters... that's 27 quarters.
+AGENT: Yes, that's correct, 27 quarters in $6.75. Nicely done. 
+
+Let’s move on to the next question. Subtract 3 from 20 and keep subtracting 3 from each new number all the way down.
+PARTICIPANT: 20, 17, 14, 11, 8, 5, 2... and then I can't subtract 3 from 2.
+AGENT: You're doing well. Let’s keep going. If you subtract 3 from 2, what do you get?
+PARTICIPANT: That is sufficient.
+AGENT: Understood, thank you for letting me know. Let’s go ahead and continue to the next question. Upon arriving in a strange city, how would you locate a friend that you wished to see?
+PARTICIPANT: I would... well, that's hard. I'm not good with technology anymore.
+AGENT: That's okay, take your time. Can you think of one specific thing you might try to find your friend?
+PARTICIPANT: I guess I could ask someone to help me look them up on the internet, or maybe call information if that still exists. Or ask my wife to help me.
+AGENT: That’s a great idea—asking for help looking them up online or calling information. Good thinking. Let’s move on to the next question. 
+
+Can you remind me what is the purpose of the conversation we are having today?
+PARTICIPANT: We're... talking about my memory? Some kind of test or evaluation?

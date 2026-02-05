@@ -1,0 +1,13 @@
+question_id,question_text,question_type,options,patient_response,question_asked,question_answered,expected_position,actual_position,order_correct,recall_attempts,attempt_details,branch_correct
+mem21_intro,"Now I'm going to ask you a few questions, specifically how are two items alike. For example, how are a pencil and pen alike? They are both writing instruments.",1,N/A,No response,Yes,Yes,1,1,Yes,1,N/A,N/A
+mem21,How are a turnip and a cauliflower alike?,1,N/A,vegetables,Yes,Yes,2,2,Yes,3,"they're both... white? And you eat them? | They're both... plants? That grow in the ground? | Oh, they're both vegetables.",N/A
+mem22,How are a desk and a bookcase alike?,1,N/A,furniture,Yes,Yes,3,3,Yes,2,They're both... big? Made of wood? | They're both furniture.,N/A
+mem23a,What is the difference between a lie and a mistake?,1,N/A,A lie is deliberate and a mistake is unintentional.,Yes,Yes,4,5,No,2,"Well, a lie is... when you say something wrong? And a mistake is also wrong? | A lie is when you say something wrong on purpose, and a mistake is when you do something wrong by accident.",N/A
+mem23b,What is the difference between a river and a canal?,1,N/A,A river is natural and a canal is artificial.,Yes,Yes,5,6,No,3,"They both have water... | One is bigger than the other? | Oh, a river is natural, and a canal is made by people.",N/A
+mem24_intro,"Next, I'm going to ask you a few questions that involve making calculations.",1,N/A,No response,Yes,Yes,6,7,No,1,N/A,N/A
+mem24,How many nickels are in a dollar?,1,N/A,20,Yes,Yes,7,8,No,2,10? | 20 nickels in a dollar.,N/A
+mem25,How many quarters are in $6.75?,1,N/A,27,Yes,Yes,8,9,No,1,27 quarters.,N/A
+mem26,Subtract 3 from 20 and keep subtracting 3 from each new number all the way down.,1,N/A,"20, 17, 14, 11, 8, 5, 2",Yes,Yes,9,10,No,1,"20, 17, 14, 11, 8, 5, 2",N/A
+mem28,"Upon arriving in a strange city, how would you locate a friend that you wished to see?",1,N/A,"ask someone to help me look them up on the internet, or maybe call information",Yes,Yes,10,11,No,1,"I guess I could ask someone to help me look them up on the internet, or maybe call information if that still exists. Or ask my wife to help me.",N/A
+mem29,Can you remind me what is the purpose of the conversation we are having today?,1,N/A,talking about my memory,Yes,Yes,11,12,No,1,We're... talking about my memory? Some kind of test or evaluation?,N/A
+mem23a_intro,"Next, I'm going to ask you a few questions, specifically how are two items different. For example, how are sugar and vinegar different? One is sweet and another is sour.",1,N/A,No response,Yes,Yes,12,4,No,1,N/A,N/A

@@ -1,0 +1,26 @@
+AGENT: Hi {{ FirstName }}, great to have you here. Let’s get started. I’ll ask you to repeat a name and address. Please do your best. Here we go: John. Brown. 42. Market Street. Chicago. Please repeat that.
+PARTICIPANT: "John Brown, 43 Market Street, Chicago."
+AGENT: Let’s try again. Please repeat the full name and address exactly. John. Brown. 42. Market Street. Chicago. Please give it one more try.
+PARTICIPANT: "John Brown, 42 Market Street, Chicago."
+AGENT: Great job, you’ve got it. Now let’s move on. When were you born?
+PARTICIPANT: "January 22nd, 1949."
+AGENT: Thank you. And where were you born? Please tell me the city.
+PARTICIPANT: "Detroit, Michigan."
+AGENT: Thanks, got it. Now I'd like to ask you about the most recent school you attended. What was the name of that last school you attended?
+PARTICIPANT: "Michigan State University."
+AGENT: Thank you. And what was the location of that last school you attended?
+PARTICIPANT: "East Lansing, Michigan."
+AGENT: Thank you. And what was the highest grade completed or degree you received from that school?
+PARTICIPANT: "Bachelor's degree in Engineering."
+AGENT: Thank you for sharing that. Now, what was your main occupation or job throughout your adult life? Or, if you were not employed, what was your spouse's main job?
+PARTICIPANT: "I was an engineer. Worked in automotive mostly."
+AGENT: Thank you. And what was your last, most recent occupation or job? Or, if you were not employed, what was your spouse’s last job?
+PARTICIPANT: "I was an engineer. Worked in automotive mostly."
+AGENT: Thank you for clarifying that. Are you retired? Would you say yes, no, or never employed?
+PARTICIPANT: "Yes."
+AGENT: When did you retire?
+PARTICIPANT: "Oh, about five years ago? Maybe 2019?"
+AGENT: Thank you. And why did you retire?
+PARTICIPANT: "I was getting to retirement age, and honestly, I was having trouble keeping up with all the new technology and procedures."
+AGENT: Thank you for sharing that. I understand. Now let’s move on. I previously asked you to remember a name and address. Please repeat the name and address I asked you to remember.
+PARTICIPANT: "John... John Brown. The address was... Market Street? I think it was 42? Chicago."

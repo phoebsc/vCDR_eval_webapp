@@ -52,6 +52,9 @@ export function initializeDatabase() {
           num_turns INTEGER NOT NULL,
           interviewer_prompt_id TEXT NOT NULL,
           simulated_user_prompt_id TEXT NOT NULL,
+          interviewer_prompt_name TEXT,
+          simulated_user_prompt_name TEXT,
+          quality_metrics_json TEXT,
           conversation_history_json TEXT NOT NULL,
           event_log_json TEXT NOT NULL
         )
@@ -64,8 +67,26 @@ export function initializeDatabase() {
           return;
         }
 
-        console.log('Database initialized successfully');
-        resolve(db);
+        // Add new columns if they don't exist (for existing databases)
+        const addColumns = [
+          `ALTER TABLE benchmark_runs ADD COLUMN interviewer_prompt_name TEXT`,
+          `ALTER TABLE benchmark_runs ADD COLUMN simulated_user_prompt_name TEXT`,
+          `ALTER TABLE benchmark_runs ADD COLUMN quality_metrics_json TEXT`
+        ];
+
+        let completed = 0;
+        addColumns.forEach(query => {
+          db.run(query, (err) => {
+            if (err && !err.message.includes('duplicate column name')) {
+              console.error('Error adding column:', err);
+            }
+            completed++;
+            if (completed === addColumns.length) {
+              console.log('Database initialized successfully');
+              resolve(db);
+            }
+          });
+        });
       });
     });
   });
@@ -89,7 +110,9 @@ export function saveBenchmarkRun(runId, runData) {
       conversation_history,
       event_log,
       interviewer_prompt_id,
-      simulated_user_prompt_id
+      simulated_user_prompt_id,
+      interviewer_prompt_name,
+      simulated_user_prompt_name
     } = runData;
 
     // Compute derived fields
@@ -104,9 +127,11 @@ export function saveBenchmarkRun(runId, runData) {
         num_turns,
         interviewer_prompt_id,
         simulated_user_prompt_id,
+        interviewer_prompt_name,
+        simulated_user_prompt_name,
         conversation_history_json,
         event_log_json
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const params = [
@@ -116,6 +141,8 @@ export function saveBenchmarkRun(runId, runData) {
       num_turns,
       interviewer_prompt_id,
       simulated_user_prompt_id,
+      interviewer_prompt_name,
+      simulated_user_prompt_name,
       JSON.stringify(conversation_history || []),
       JSON.stringify(event_log || [])
     ];
@@ -134,7 +161,9 @@ export function saveBenchmarkRun(runId, runData) {
         mode: mode || 'benchmark',
         num_turns,
         interviewer_prompt_id,
-        simulated_user_prompt_id
+        simulated_user_prompt_id,
+        interviewer_prompt_name,
+        simulated_user_prompt_name
       });
     });
   });
@@ -201,12 +230,14 @@ export function getBenchmarkRun(runId) {
       const run = {
         ...row,
         conversation_history: JSON.parse(row.conversation_history_json),
-        event_log: JSON.parse(row.event_log_json)
+        event_log: JSON.parse(row.event_log_json),
+        quality_metrics: row.quality_metrics_json ? JSON.parse(row.quality_metrics_json) : null
       };
 
       // Remove JSON string fields from response
       delete run.conversation_history_json;
       delete run.event_log_json;
+      delete run.quality_metrics_json;
 
       resolve(run);
     });
@@ -232,6 +263,43 @@ export function closeDatabase() {
 
       console.log('Database connection closed');
       db = null;
+      resolve();
+    });
+  });
+}
+
+/**
+ * Update quality metrics for a benchmark run
+ * @param {string} runId - Run identifier
+ * @param {Object} qualityMetrics - Quality metrics data
+ * @returns {Promise<void>}
+ */
+export function updateQualityMetrics(runId, qualityMetrics) {
+  return new Promise((resolve, reject) => {
+    if (!db) {
+      reject(new Error('Database not initialized'));
+      return;
+    }
+
+    const updateQuery = `
+      UPDATE benchmark_runs
+      SET quality_metrics_json = ?
+      WHERE run_id = ?
+    `;
+
+    db.run(updateQuery, [JSON.stringify(qualityMetrics), runId], function(err) {
+      if (err) {
+        console.error('Error updating quality metrics:', err);
+        reject(err);
+        return;
+      }
+
+      if (this.changes === 0) {
+        reject(new Error(`Benchmark run ${runId} not found`));
+        return;
+      }
+
+      console.log(`Quality metrics updated for run: ${runId}`);
       resolve();
     });
   });

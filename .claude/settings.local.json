@@ -10,7 +10,19 @@
       "Bash(powershell \"Stop-Process -Id 28804 -Force\")",
       "Bash(powershell \"Get-Process node | Stop-Process -Force\")",
       "Bash(powershell \"Stop-Process -Id 29788 -Force\")",
-      "Bash(powershell \"Stop-Process -Id 31964 -Force\")"
+      "Bash(powershell \"Stop-Process -Id 31964 -Force\")",
+      "Bash(sqlite3:*)",
+      "Bash(timeout 10s npm start)",
+      "Bash(timeout 5s npm start)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(chmod:*)",
+      "Bash(git pull:*)",
+      "Bash(git submodule:*)",
+      "Bash(python:*)",
+      "Bash(pip uninstall:*)",
+      "Bash(pip install:*)"
     ],
     "deny": [],
     "ask": []

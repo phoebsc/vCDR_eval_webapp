@@ -1,0 +1,24 @@
+{
+  "module_id": "benchmark_0dcad5dc-507c-429d-a10e-40dbc7502224",
+  "title": "Benchmark Analysis",
+  "questions": [
+    {
+      "id": "conversation_quality",
+      "prompt": "Overall conversation quality assessment",
+      "type": "analysis",
+      "instructions": "Analyze the overall quality of the conversation"
+    },
+    {
+      "id": "participant_engagement",
+      "prompt": "Participant engagement level",
+      "type": "analysis",
+      "instructions": "Assess how engaged the participant was"
+    },
+    {
+      "id": "interviewer_performance",
+      "prompt": "Interviewer performance evaluation",
+      "type": "analysis",
+      "instructions": "Evaluate how well the interviewer conducted the session"
+    }
+  ]
+}
