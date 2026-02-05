@@ -34,11 +34,11 @@ const interviewerConfig = getPromptConfig('interviewer');
 const voiceBotSessionConfig = JSON.stringify({
   session: {
     type: "realtime",
-    model: "gpt-4o-realtime-preview",
+    model: "gpt-4o-realtime-2025-08-28",
     instructions: interviewerConfig.prompt,
     audio: {
       output: {
-        voice: "marin",
+        voice: "alloy",
       },
     },
   },
