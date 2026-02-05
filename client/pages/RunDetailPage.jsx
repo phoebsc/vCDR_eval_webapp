@@ -13,6 +13,9 @@ export default function RunDetailPage({ runId }) {
   const [qualityMetrics, setQualityMetrics] = useState(null);
   const [metricsComputing, setMetricsComputing] = useState(false);
   const [expandedColumns, setExpandedColumns] = useState(new Set());
+  const [benchmarkTests, setBenchmarkTests] = useState(null);
+  const [testsComputing, setTestsComputing] = useState(false);
+  const [expandedTestColumns, setExpandedTestColumns] = useState(new Set());
 
   useEffect(() => {
     if (runId) {
@@ -34,6 +37,16 @@ export default function RunDetailPage({ runId }) {
         setQualityMetrics(run.quality_metrics);
       }
       // Note: We do NOT automatically fetch/compute metrics - only when user clicks button
+    }
+  }, [run]);
+
+  // Set benchmarking tests from run data if available (no automatic fetching)
+  useEffect(() => {
+    if (run && run.run_id) {
+      if (run.benchmark_tests) {
+        setBenchmarkTests(run.benchmark_tests);
+      }
+      // Note: We do NOT automatically fetch/compute tests - only when user clicks button
     }
   }, [run]);
 
@@ -125,6 +138,51 @@ export default function RunDetailPage({ runId }) {
       setMetricsComputing(false);
     }
   };
+
+  const computeBenchmarkTests = async () => {
+    try {
+      console.log(`[CLIENT] 🔄 Compute tests button clicked for run: ${run.run_id}`);
+      console.log(`[CLIENT] 📅 Client timestamp: ${new Date().toISOString()}`);
+      setTestsComputing(true);
+
+      const apiUrl = `/api/benchmark-runs/${run.run_id}/tests`;
+      console.log(`[CLIENT] 🌐 Making POST request to: ${apiUrl}`);
+
+      const response = await fetch(apiUrl, {
+        method: 'POST'
+      });
+
+      console.log(`[CLIENT] 📊 Response status: ${response.status}`);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`[CLIENT] ✅ Received tests data - total tests: ${data.tests?.tests?.length}`);
+        console.log(`[CLIENT] 📋 Full response:`, data);
+        setBenchmarkTests(data.tests);
+      } else {
+        const errorData = await response.json();
+        console.error('Error computing benchmark tests:', errorData.error);
+        alert(`Failed to compute benchmark tests: ${errorData.error}`);
+      }
+    } catch (err) {
+      console.error('Error computing benchmark tests:', err);
+      alert('Failed to compute benchmark tests');
+    } finally {
+      setTestsComputing(false);
+    }
+  };
+
+  const toggleTestColumnExpansion = (columnKey) => {
+    const newExpanded = new Set(expandedTestColumns);
+    if (newExpanded.has(columnKey)) {
+      newExpanded.delete(columnKey);
+    } else {
+      newExpanded.add(columnKey);
+    }
+    setExpandedTestColumns(newExpanded);
+  };
+
+  const isTestColumnExpanded = (columnKey) => expandedTestColumns.has(columnKey);
 
   const formatDate = (dateString) => {
     try {
@@ -344,6 +402,23 @@ export default function RunDetailPage({ runId }) {
                   <BarChart size={16} />
                   Quality Metrics
                   {qualityMetrics && (
+                    <span className="bg-green-100 text-green-800 text-xs px-1.5 py-0.5 rounded">✓</span>
+                  )}
+                </div>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('tests')}
+                className={`px-6 py-3 font-medium text-sm border-b-2 ${
+                  activeTab === 'tests'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Activity size={16} />
+                  Benchmarking Tests
+                  {benchmarkTests && (
                     <span className="bg-green-100 text-green-800 text-xs px-1.5 py-0.5 rounded">✓</span>
                   )}
                 </div>
@@ -906,6 +981,148 @@ export default function RunDetailPage({ runId }) {
                             ) : (
                               <span className="text-yellow-600">✗ Unavailable</span>
                             )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'tests' && (
+              <div className="space-y-6 max-h-[calc(100vh-24rem)] overflow-y-auto pr-2">
+                {/* Tests Header */}
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">Benchmarking Tests</h3>
+                  <div className="flex gap-2">
+                    {benchmarkTests && (
+                      <Button
+                        onClick={computeBenchmarkTests}
+                        icon={<RefreshCw height={16} />}
+                        className="bg-blue-600 text-sm"
+                        disabled={testsComputing}
+                      >
+                        {testsComputing ? 'Recomputing...' : 'Recompute'}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Loading State */}
+                {testsComputing && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <RefreshCw className="animate-spin text-blue-600" size={16} />
+                      <div className="text-blue-800">Computing benchmarking tests for this benchmark run...</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Empty State */}
+                {!benchmarkTests && !testsComputing && (
+                  <div className="text-center py-12 bg-gray-50 rounded-lg">
+                    <Activity className="mx-auto text-gray-400 mb-4" size={48} />
+                    <div className="text-gray-600 mb-2">Benchmarking tests not yet computed</div>
+                    <div className="text-gray-500 text-sm mb-4">
+                      Run automated tests to analyze conversation quality, engagement, and performance metrics.
+                    </div>
+                    <Button
+                      onClick={computeBenchmarkTests}
+                      icon={<Activity height={16} />}
+                      className="bg-green-600"
+                    >
+                      Compute Tests
+                    </Button>
+                  </div>
+                )}
+
+                {/* Test Results */}
+                {benchmarkTests && benchmarkTests.tests && (
+                  <div className="space-y-6">
+                    {benchmarkTests.tests.map((test, index) => (
+                      <div key={index} className="bg-white border rounded-lg overflow-hidden">
+                        <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
+                          <h5 className="font-semibold text-gray-900">{test.title}</h5>
+                          <Button
+                            onClick={computeBenchmarkTests}
+                            icon={<RefreshCw height={16} />}
+                            className="bg-blue-600 text-sm"
+                            disabled={testsComputing}
+                          >
+                            {testsComputing ? 'Running...' : 'Run Test'}
+                          </Button>
+                        </div>
+
+                        {/* Test Results Table */}
+                        <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50 sticky top-0 z-10">
+                              <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Metric
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Value
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Status
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {test.variables && test.variables.map((variable, variableIndex) => (
+                                <tr key={variableIndex} className={variableIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {variable.metric}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {variable.value}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                      variable.status === 'good'
+                                        ? 'bg-green-100 text-green-800'
+                                        : variable.status === 'warning'
+                                        ? 'bg-yellow-100 text-yellow-800'
+                                        : 'bg-red-100 text-red-800'
+                                    }`}>
+                                      {variable.status === 'good' ? '✓ Good' :
+                                       variable.status === 'warning' ? '⚠ Warning' :
+                                       '✗ Poor'}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Test Metadata */}
+                    <div className="bg-gray-50 border rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 mb-2">Test Information</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-600">Computed At:</span>
+                          <div className="font-medium">{formatDate(benchmarkTests.computed_at)}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Version:</span>
+                          <div className="font-medium">{benchmarkTests.metadata?.version || 'N/A'}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Total Tests:</span>
+                          <div className="font-medium">{benchmarkTests.metadata?.total_tests || benchmarkTests.tests?.length || 0}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Computation Time:</span>
+                          <div className="font-medium">
+                            {benchmarkTests.metadata?.computation_time_ms
+                              ? `${benchmarkTests.metadata.computation_time_ms}ms`
+                              : 'N/A'
+                            }
                           </div>
                         </div>
                       </div>
