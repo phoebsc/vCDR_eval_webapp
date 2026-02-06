@@ -44,7 +44,12 @@ export default function RunDetailPage({ runId }) {
   useEffect(() => {
     if (run && run.run_id) {
       if (run.benchmark_tests) {
-        setBenchmarkTests(run.benchmark_tests);
+        // Wrap in expected format if needed
+        if (Array.isArray(run.benchmark_tests)) {
+          setBenchmarkTests({ tests: run.benchmark_tests });
+        } else {
+          setBenchmarkTests(run.benchmark_tests);
+        }
       }
       // Note: We do NOT automatically fetch/compute tests - only when user clicks button
     }
@@ -156,9 +161,9 @@ export default function RunDetailPage({ runId }) {
 
       if (response.ok) {
         const data = await response.json();
-        console.log(`[CLIENT] ✅ Received tests data - total tests: ${data.tests?.tests?.length}`);
+        console.log(`[CLIENT] ✅ Received tests data - total tests: ${data.tests?.length}`);
         console.log(`[CLIENT] 📋 Full response:`, data);
-        setBenchmarkTests(data.tests);
+        setBenchmarkTests(data);
       } else {
         const errorData = await response.json();
         console.error('Error computing benchmark tests:', errorData.error);
