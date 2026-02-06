@@ -6,7 +6,7 @@ import { createServer as createViteServer } from "vite";
 import { getSystemPrompt, getPromptConfig, getInterviewerPromptId, getSimulatedUserPromptId, generatePromptId } from "./lib/promptLoader.js";
 import { initializeDatabase, saveBenchmarkRun, getBenchmarkRuns, getBenchmarkRun, updateQualityMetrics, updateBenchmarkTests } from "./server/lib/database.js";
 import { computeQualityMetrics } from "./server/lib/metricsService.js";
-import { computeBenchmarkTests } from "./server/lib/benchmarkingService.js";
+import { computeBenchmarkTests } from "./server/lib/benchmarkTests/computeTests.js";
 import "dotenv/config";
 
 const app = express();
