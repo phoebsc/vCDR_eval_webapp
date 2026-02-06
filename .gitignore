@@ -19,3 +19,10 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# Python byte-compiled files
+__pycache__/
+*.pyc
+
+# data folder
+data/

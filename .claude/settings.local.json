@@ -22,7 +22,8 @@
       "Bash(git submodule:*)",
       "Bash(python:*)",
       "Bash(pip uninstall:*)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(timeout 5s tail:*)"
     ],
     "deny": [],
     "ask": []

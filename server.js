@@ -4,8 +4,9 @@ import path from "path";
 import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { getSystemPrompt, getPromptConfig, getInterviewerPromptId, getSimulatedUserPromptId, generatePromptId } from "./lib/promptLoader.js";
-import { initializeDatabase, saveBenchmarkRun, getBenchmarkRuns, getBenchmarkRun, updateQualityMetrics } from "./server/lib/database.js";
+import { initializeDatabase, saveBenchmarkRun, getBenchmarkRuns, getBenchmarkRun, updateQualityMetrics, updateBenchmarkTests } from "./server/lib/database.js";
 import { computeQualityMetrics } from "./server/lib/metricsService.js";
+import { computeBenchmarkTests } from "./server/lib/benchmarkTests/computeTests.js";
 import "dotenv/config";
 
 const app = express();
@@ -382,6 +383,90 @@ app.get("/api/benchmark-runs/:run_id/metrics", async (req, res) => {
       res.status(404).json({ error: `Run not found: ${req.params.run_id}` });
     } else {
       res.status(500).json({ error: "Failed to retrieve quality metrics" });
+    }
+  }
+});
+
+// POST /api/benchmark-runs/:run_id/tests - Compute benchmarking tests for a run
+app.post("/api/benchmark-runs/:run_id/tests", async (req, res) => {
+  try {
+    const { run_id } = req.params;
+    console.log(`[BENCHMARKING] 🔄 API ENDPOINT HIT - Computing tests for run: ${run_id}`);
+    console.log(`[BENCHMARKING] 📅 Server timestamp: ${new Date().toISOString()}`);
+
+    // Get the full run data including conversation history
+    const run = await getBenchmarkRun(run_id);
+    console.log(`[BENCHMARKING] 📊 Retrieved run data - interviewer_prompt: ${run.interviewer_prompt_name}`);
+
+    if (!run.conversation_history || run.conversation_history.length === 0) {
+      return res.status(400).json({
+        error: "No conversation history found for this run"
+      });
+    }
+
+    // Check if tests already exist
+    if (run.benchmark_tests) {
+      console.log(`[BENCHMARKING] ⚠️  Existing tests found, will overwrite them`);
+    } else {
+      console.log(`[BENCHMARKING] ✨ Computing tests for the first time`);
+    }
+
+    // Compute benchmarking tests with metadata from the run
+    const benchmarkTests = await computeBenchmarkTests(
+      run_id,
+      run.conversation_history,
+      {
+        interviewer_prompt: run.interviewer_prompt_name,
+        user_prompt: run.simulated_user_prompt_name,
+        force_recompute: true
+      }
+    );
+
+    console.log(`[BENCHMARKING] ✅ Tests computation completed for run: ${run_id}`);
+
+    // Save the benchmarking tests to the database
+    await updateBenchmarkTests(run_id, benchmarkTests);
+    console.log(`[BENCHMARKING] 💾 Tests saved to database for run: ${run_id}`);
+
+    res.json({
+      ok: true,
+      tests: benchmarkTests,
+      message: "Benchmarking tests computed successfully"
+    });
+
+  } catch (error) {
+    console.error(`[BENCHMARKING] ❌ ERROR computing tests for run ${req.params.run_id}:`, error);
+    res.status(500).json({
+      error: "Failed to compute benchmarking tests",
+      details: error.message
+    });
+  }
+});
+
+// GET /api/benchmark-runs/:run_id/tests - Get benchmarking tests for a run
+app.get("/api/benchmark-runs/:run_id/tests", async (req, res) => {
+  try {
+    const { run_id } = req.params;
+    const run = await getBenchmarkRun(run_id);
+
+    if (!run.benchmark_tests) {
+      return res.status(404).json({
+        error: "No benchmarking tests found for this run",
+        computed: false
+      });
+    }
+
+    res.json({
+      ok: true,
+      computed: true,
+      tests: run.benchmark_tests
+    });
+  } catch (error) {
+    console.error(`Error retrieving tests for run ${req.params.run_id}:`, error);
+    if (error.message.includes('not found')) {
+      res.status(404).json({ error: `Run not found: ${req.params.run_id}` });
+    } else {
+      res.status(500).json({ error: "Failed to retrieve benchmarking tests" });
     }
   }
 });

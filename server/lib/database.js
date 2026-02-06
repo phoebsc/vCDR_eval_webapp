@@ -71,7 +71,8 @@ export function initializeDatabase() {
         const addColumns = [
           `ALTER TABLE benchmark_runs ADD COLUMN interviewer_prompt_name TEXT`,
           `ALTER TABLE benchmark_runs ADD COLUMN simulated_user_prompt_name TEXT`,
-          `ALTER TABLE benchmark_runs ADD COLUMN quality_metrics_json TEXT`
+          `ALTER TABLE benchmark_runs ADD COLUMN quality_metrics_json TEXT`,
+          `ALTER TABLE benchmark_runs ADD COLUMN benchmark_tests_json TEXT`
         ];
 
         let completed = 0;
@@ -231,13 +232,15 @@ export function getBenchmarkRun(runId) {
         ...row,
         conversation_history: JSON.parse(row.conversation_history_json),
         event_log: JSON.parse(row.event_log_json),
-        quality_metrics: row.quality_metrics_json ? JSON.parse(row.quality_metrics_json) : null
+        quality_metrics: row.quality_metrics_json ? JSON.parse(row.quality_metrics_json) : null,
+        benchmark_tests: row.benchmark_tests_json ? JSON.parse(row.benchmark_tests_json) : null
       };
 
       // Remove JSON string fields from response
       delete run.conversation_history_json;
       delete run.event_log_json;
       delete run.quality_metrics_json;
+      delete run.benchmark_tests_json;
 
       resolve(run);
     });
@@ -300,6 +303,43 @@ export function updateQualityMetrics(runId, qualityMetrics) {
       }
 
       console.log(`Quality metrics updated for run: ${runId}`);
+      resolve();
+    });
+  });
+}
+
+/**
+ * Update benchmark tests for a benchmark run
+ * @param {string} runId - Run identifier
+ * @param {Object} benchmarkTests - Benchmark tests data
+ * @returns {Promise<void>}
+ */
+export function updateBenchmarkTests(runId, benchmarkTests) {
+  return new Promise((resolve, reject) => {
+    if (!db) {
+      reject(new Error('Database not initialized'));
+      return;
+    }
+
+    const updateQuery = `
+      UPDATE benchmark_runs
+      SET benchmark_tests_json = ?
+      WHERE run_id = ?
+    `;
+
+    db.run(updateQuery, [JSON.stringify(benchmarkTests), runId], function(err) {
+      if (err) {
+        console.error('Error updating benchmark tests:', err);
+        reject(err);
+        return;
+      }
+
+      if (this.changes === 0) {
+        reject(new Error(`Benchmark run ${runId} not found`));
+        return;
+      }
+
+      console.log(`Benchmark tests updated for run: ${runId}`);
       resolve();
     });
   });
