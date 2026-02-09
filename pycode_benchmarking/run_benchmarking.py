@@ -22,10 +22,10 @@ def main():
     args = parser.parse_args()
 
     transcript = Path(args.transcript).read_text().strip()
-
+    options = args.options
     try:
         tests = [
-            conversation_flow.run(transcript),
+            conversation_flow.run(transcript, options),
             # engagement.run(transcript),
             # response_quality.run(transcript),
             # conversation_health.run(transcript),

@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
-import { getSystemPrompt, getPromptConfig, getInterviewerPromptId, getSimulatedUserPromptId, generatePromptId } from "./lib/promptLoader.js";
+import { getPromptConfig, generatePromptId } from "./lib/promptLoader.js";
 import { initializeDatabase, saveBenchmarkRun, getBenchmarkRuns, getBenchmarkRun, updateQualityMetrics, updateBenchmarkTests } from "./server/lib/database.js";
 import { computeQualityMetrics } from "./server/lib/metricsService.js";
 import { computeBenchmarkTests } from "./server/lib/benchmarkTests/computeTests.js";
@@ -31,11 +31,11 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Voice Bot (Interviewer) Configuration
-const interviewerConfig = getPromptConfig('interviewer');
+const interviewerConfig = getPromptConfig('5 - Subject - Orientation');
 const voiceBotSessionConfig = JSON.stringify({
   session: {
     type: "realtime",
-    model: "gpt-4o-realtime-2025-08-28",
+    model: "gpt-realtime-2025-08-28",
     instructions: interviewerConfig.prompt,
     audio: {
       output: {
@@ -56,11 +56,11 @@ app.post("/api/session-config", (req, res) => {
   const dynamicSessionConfig = JSON.stringify({
     session: {
       type: "realtime",
-      model: "gpt-realtime",
+      model: "gpt-realtime-2025-08-28",
       instructions: promptConfig.prompt,
       audio: {
         output: {
-          voice: "marin",
+          voice: "alloy",
         },
       },
     },
@@ -91,11 +91,11 @@ app.post("/session", async (req, res) => {
   const dynamicSessionConfig = JSON.stringify({
     session: {
       type: "realtime",
-      model: "gpt-realtime",
+      model: "gpt-realtime-2025-08-28",
       instructions: promptConfig.prompt,
       audio: {
         output: {
-          voice: "marin",
+          voice: "alloy",
         },
       },
     },
@@ -139,15 +139,15 @@ app.get("/token", async (req, res) => {
     // Build dynamic session configuration
     const dynamicSessionConfig = JSON.stringify({
       session: {
-        type: "realtime",
-        model: "gpt-realtime",
-        instructions: promptConfig.prompt,
-        audio: {
-          output: {
-            voice: "marin",
-          },
+      type: "realtime",
+      model: "gpt-realtime-2025-08-28",
+      instructions: promptConfig.prompt,
+      audio: {
+        output: {
+          voice: "alloy",
         },
       },
+    },
     });
 
     console.log('[TOKEN] Sending session config to OpenAI with instructions:',
