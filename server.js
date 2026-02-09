@@ -30,24 +30,6 @@ app.use(express.text({ limit: '50mb' }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Voice Bot (Interviewer) Configuration
-const interviewerConfig = getPromptConfig('5 - Subject - Orientation');
-const voiceBotSessionConfig = JSON.stringify({
-  session: {
-    type: "realtime",
-    model: "gpt-realtime-2025-08-28",
-    instructions: interviewerConfig.prompt,
-    audio: {
-      output: {
-        voice: "alloy",
-      },
-    },
-  },
-});
-
-// Keep original config for backward compatibility
-const sessionConfig = voiceBotSessionConfig;
-
 // New endpoint: Just return session config based on prompt selection
 app.post("/api/session-config", (req, res) => {
   const interviewerPromptName = req.body.interviewerPrompt || 'interviewer';
